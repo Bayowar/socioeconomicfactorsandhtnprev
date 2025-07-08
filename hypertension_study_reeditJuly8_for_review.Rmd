@@ -1,0 +1,1109 @@
+---
+title: "Impact of Structural Socioeconomic Factors on Hypertension Prevalence in U.S.: A Case Study of Washington, D.C."
+author: 
+  - "Bayowa Onabajo, Howard University"
+  - "Nathan N. Alexander, Howard University"
+  - "Jibek Gupta, Howard University"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(here)
+here::i_am("hypertension_study.Rmd")
+library(knitr)
+```
+
+# Abstract
+This study examined the impact of key socioeconomic determinants—poverty rate, unemployment rate, lack of health insurance, and the proportion of the elderly population—on hypertension mortality in the District of Columbia between 2014 and 2024. Grounded in the Social Determinants of Health (SDH) theory and Grossman’s Health Capital Theory, the study employed a time series analytical approach using the Autoregressive Distributed Lag (ARDL) model to explore both the short-run and long-run relationships among the variables. Secondary data were obtained from reliable U.S. health and economic databases including CDC, U.S. Census Bureau, and Bureau of Labor Statistics. Unit root tests confirmed a mixture of I(0) and I(1) series, justifying the application of the ARDL technique. Results from the ARDL model (n = 1867 observations across 11 years and 272 tracts) show that a 1% increase in poverty is associated with a 0.58% increase in HTP, controlling for other factors (p < 0.01).The bounds test confirmed the presence of a long-run relationship. Empirical results revealed that poverty rate had a positive and statistically significant long-run effect on hypertension mortality, while unemployment also showed a significant negative impact. However, the proportion of the elderly population and lack of health insurance were not statistically significant in the long run. Diagnostic tests confirmed the robustness of the model, showing no evidence of serial correlation, heteroskedasticity, or model misspecification. The study concluded that socioeconomic disadvantage, particularly poverty and unemployment, plays a critical role in shaping hypertension-related deaths in urban communities. It recommended targeted health equity policies, improved employment opportunities, and place-based interventions to address structural barriers to cardiovascular health. The findings offer valuable guide for policymakers and public health practitioners seeking to reduce preventable mortality linked to chronic diseases in socioeconomically vulnerable populations.
+
+# Introduction 
+Hypertensive diseases remain a leading public health concern in the United States, disproportionately affecting various people. Hypertension is a major risk factor for cardiovascular disease, stroke, and various multi-systemic diseases. Despite medical advancements, disparities in hypertension outcomes persist across U.S. states disproportionately affecting elderly, minority and low-income populations in the U.S. (Benjamin et al., 2019). Community resilience which is the ability of communities to adapt to socio-economic challenges has gained attention as a determinant of health outcomes. Socioeconomic challenges—which encompasses education levels, poverty rates, healthcare access, and employment stability—has been increasingly recognized as a key determinant of chronic disease outcomes (Diez Roux et al., 2016). While hypertension is often attributed to genetic, behavioral, and lifestyle factors, recent research suggests that socioeconomic resilience factors such as poverty, unemployment, and healthcare access directly influence the prevalence and severity of hypertensive diseases at community level. We investigate how community resilience factors are related and influence hypertensive disease prevalence in the District of Columbia Utilizing data from the Center for Disease Control and prevention (CDC) Population Level Analysis and Community Estimates (PLACES) hypertension, Behavioral Risk Factor Surveillance System (BRFSS) data-set, and the American Community Survey (ACS) 5-Year 2022 socioeconomic resilience variables, we analyze the relationships between poverty, education, unemployment, healthcare access, and hypertension outcomes. We operationalize resilience via census-tract indicators: Age over sixty five, poverty rate, unemployment rate, and uninsured rate.Our findings reveal that socioeconomic and community resilience factors correlate with hypertension prevalence, underscoring the need for targeted public health and health policy measures.
+
+
+
+### Theoretical Framework
+The Social Determinants of Health (SDH) Theory
+The Social Determinants of Health (SDH) theory, as conceptualized by the World Health Organization’s Commission on Social Determinants of Health (CSDH) led by Sir Michael Marmot, posits that health outcomes are shaped not only by genetic and biological factors but, more critically, by the social, economic, and environmental conditions in which people are born, live, work, and age (Marmot et al., 2008). The theory emphasizes that inequalities in access to education, employment, income, housing, and healthcare systematically produce and perpetuate disparities in health outcomes across populations. This perspective has become foundational in modern public health research and policy discourse, particularly in addressing chronic diseases and health inequities.
+Critically, while the SDH framework offers a comprehensive lens, its breadth has been both a strength and a limitation. Scholars such as Solar and Irwin (2010) argue that while the theory robustly captures the upstream factors affecting health, its application often faces challenges in empirical research due to the complexity of measuring and isolating causal effects. Moreover, the political economy critique, as highlighted by Navarro (2009), suggests that SDH often underemphasizes the role of power, economic policy, and institutional structures in shaping health determinants. In practice, although SDH has influenced many health equity policies globally, there remains a gap between theoretical understanding and policy implementation, especially in situation dominated by individualistic or biomedical health models.
+Nevertheless, the SDH theory remains a transformative paradigm, shifting the focus of health research and intervention from downstream medical care to upstream structural determinants. Its adoption by institutions like the WHO, CDC, and numerous national health bodies reflects its relevance and applicability across the globe.
+In this study, the Social Determinants of Health theory provides a compelling theoretical lens. This study examines the influence of poverty rate, unemployment, lack of health insurance, and the aging population on hypertension mortality in the District of Columbia from 2014 to 2024. These variables are central to the SDH framework, which recognizes such socioeconomic conditions as pivotal to understanding health disparities (Braveman & Gottlieb, 2014). The empirical results demonstrating significant long-run relationships between these determinants and hypertension mortality reinforce the SDH position that health inequities are rooted in social and economic inequalities. Thus, the SDH theory does not only inform the selection and interpretation of variables in this study but also frames the argument for structural health reforms aimed at reducing chronic disease mortality in marginalized communities.
+
+Grossman’s Health Capital Theory
+Grossman’s Health Capital Theory, developed by economist Michael Grossman in his seminal work “On the Concept of Health Capital and the Demand for Health” (1972), offers a microeconomic framework for understanding health behavior. The theory conceptualizes health as a durable capital stock that depreciates over time but can be enhanced or maintained through investment, such as better nutrition, exercise, medical care, education, and time allocation. Individuals are viewed as both producers and consumers of health: they invest in health to reduce sick days (which affect productivity and income) and to increase utility from enjoying life in good health.
+One of the most influential contributions of this theory is the understanding that health is both a consumption and an investment good. People derive immediate satisfaction from being healthy (consumption), while also benefiting from future economic gains due to reduced absenteeism and medical costs (investment). Education plays a critical role in Grossman’s model—more educated individuals are seen as more efficient health producers, as they better understand health information and can navigate the healthcare system more effectively. Similarly, income affects the ability to invest in health, reinforcing the idea that socioeconomic status is intrinsically tied to health outcomes.
+Despite its wide application in health economics, the theory is not without limitations. Critics argue that Grossman’s model assumes rational behavior and full information, which may not hold in real-world settings, particularly among vulnerable or low-income populations. Moreover, it emphasizes individual agency while downplaying the influence of broader social, environmental, and structural factors, which are central to public health frameworks like the Social Determinants of Health theory. Additionally, the original model does not adequately account for the effects of chronic stress, systemic inequality, or access barriers in healthcare services, which are essential when analyzing health disparities in marginalized communities.
+Grossman’s Health Capital Theory offers a strong theoretical underpinning for analyzing the role of socioeconomic variables in determining hypertension mortality. The key variables explored—poverty rate, unemployment, lack of health insurance, and aging population—are directly related to individuals’ capacity to invest in and maintain their health capital. For instance, individuals with insufficient income or no insurance may delay seeking care for hypertension, leading to complications and increased mortality risk. The significant findings in the study, particularly the negative effects of unemployment and poverty on health outcomes in the District of Columbia, reflect the core logic of Grossman’s theory: socioeconomic disadvantage limits individuals’ ability to sustain health, resulting in poorer long-term health outcomes. Thus, the theory effectively frames the individual-level economic constraints that drive broader population-level health disparities observed in this research.
+
+
+### Research Objectives
+i.To examine the effect of poverty rate on hypertension mortality in the District of Columbia.
+ii.To assess the influence of unemployment rate on hypertension mortality in the District of Columbia.
+iii.To investigate the effect of lack of health insurance on hypertension mortality in the District of Columbia.
+iv.To analyze the impact of the elderly population (age 65 and above) on hypertension mortality in the District of Columbia.
+
+
+### Research Questions
+
+1. What is the effect of the poverty rate on hypertension mortality in the District of Columbia?
+2. How does the unemployment rate influence hypertension mortality in the District of Columbia?
+3. What is the impact of the lack of health insurance on hypertension mortality in the District of Columbia?
+4. To what extent does the elderly population (age 65 and above) affect hypertension mortality in the District of Columbia?
+To address these questions, the study applies an ARDL time-series framework using city-level data from 2013–2024.
+
+### Null Hypotheses (H₀)
+H₀: Poverty rate has no significant effect on hypertension mortality in the District of Columbia.
+H₀: Unemployment rate has no significant effect on hypertension mortality in the District of Columbia.
+H₀: Lack of health insurance has no significant effect on hypertension mortality in the District of Columbia.
+H₀: The proportion of the elderly population (age 65 and above) has no significant effect on hypertension mortality in the District of Columbia.
+
+This study is significant as it provides empirical evidence on how key socioeconomic determinants—poverty, unemployment, lack of health insurance, and the aging population—affect hypertension mortality in the District of Columbia. Understanding these relationships is vital in informing public health policy, particularly in urban centers where health disparities persist. The findings offer required understanding to health authorities, urban planners, and social policymakers by highlighting the structural barriers to improved cardiovascular health. Moreover, the study strengthens theoretical discourse by applying both the Social Determinants of Health theory and Grossman’s Health Capital Theory, thereby bridging public health and health economics perspectives in addressing chronic disease mortality. It contributes to existing literature by using time series data and advanced econometric techniques to assess long-run and short-run dynamics, thus helping to guide evidence-based interventions aimed at reducing hypertension-related deaths.
+
+
+# Literature Review
+Hypertension as a Public Health Crisis Hypertension is a silent killer, affecting about 119.9 million (48%) of U.S. adults and contributing to half of all cardiovascular disease-related deaths (CDC, 2022). While hypertension risk factors include diet, genetics, and physical activity, socioeconomic conditions exacerbate disparities in treatment access and outcomes (Fang et al., 2018). Socioeconomic Determinants of Health such as income, education, employment, and healthcare access significantly shape health outcomes. Research has shown that lower income is associated with higher hypertension prevalence due to stress and limited healthcare access (Braveman et al., 2011). Education levels impact health literacy, affecting health habits, medication adherence and preventive care engagement (Cutler & Lleras-Muney, 2009). Unemployment and socioeconomic instability increase chronic disease risk through psychosocial stress . Racial disparities in hypertension  prevalence in racial minorities, particularly black and hispanic populations, experience higher hypertension mortality rates than white populations (Williams & Mohammed, 2013). This disparity is exacerbated in states with limited healthcare infrastructure, reinforcing the need for targeted state level analysis. While previous studies have examined socioeconomic factors in hypertension prevalence, few have explored state-level variations using contemporary datasets and while prior research applied multivariate models at national or county levels, few use tract-level panel data with ARDL methodology, especially in urban centers like DC. This study contributes to existing literature by analyzing state socioeconomic and community resilience factors and its association with hypertension prevalence.
+
+
+### Empirical Review
+Several empirical studies have explored the socioeconomic underpinnings of hypertension prevalence and mortality, with growing emphasis on the role of structural disparities in shaping health outcomes. These studies have established strong links between variables such as poverty, employment status, health insurance coverage, and population aging with cardiovascular and hypertension-related mortality.
+Woolf et al. (2019), as part of their comprehensive analysis into health inequities across U.S. metropolitan areas, found a significant link between poverty and early death, and, in particular, pointed to heart disease and hypertension. In examining mortality rates on a county-by-county basis, these researchers showed that residents of high-poverty neighborhoods had a higher prevalence of poorly managed hypertension and a heightened risk of death, owing to limited access to medical care and chronic exposure to sources of tension. Similarly, Thorpe et al. (2015) found that control of hypertension was considerably poorer in economically disadvantaged urban neighborhoods, mainly because of poor health literacy and poor use of prevention medical services.
+Couch et al. (2013) analyzed longitudinal data drawn from the U.S. Panel Study of Income Dynamics and found a significant link between unemployment—specifically, extended periods of unemployment—and rising cardiovascular mortality rates. While their work highlighted the link between unemployment's related psychosocial and financial insecurities and its harmful influence on chronic illness self-management, Reeves et al. (2014) studied 26 years' data on U.S. mortality and employment and found that a 1% boost in unemployment rates was linked with a substantial increase in deaths by cardiovascular diseases, including deaths by hypertension.
+Bailey et al. (2017) showed in Health Affairs that a lack of health coverage was a major barrier to hypertension diagnosis and control, and mainly affected minority populations. These results showed that uninsured people had a lower rate of evaluation of their blood pressure and a higher risk of requiring high severity hospital treatment for hypertension. In a comparable analysis, McWilliams (2009) used a nationally representative data set and found that possessing medical coverage was a key determinant of hypertension control and found that uninsured people were significantly less likely to have well-controlled blood pressure measures
+According to the CDC (2020), approximately 70% of adults aged 65 and older in the U.S. have hypertension, making age a major risk factor. Egan et al. (2014) analyzed NHANES data and found a direct, significant relationship between increasing age and both prevalence and severity of hypertension. They noted that without targeted management, older adults are more likely to suffer complications such as stroke and heart failure, leading to higher mortality.
+Many studies have utilized panel data models, multivariate regressions, and hazard models to estimate the relationship between socioeconomic variables and health outcomes. Few, however, have applied time series techniques such as ARDL the case study, which is a unique contribution of the current study.
+
+
+#Methodology:
+
+#### Center for Disease Control and Prevention (CDC,BRFSS,PlACES) 
+
+We use tract-level data from the Center for Disease Control and Prevention's Behavioral Risk Factor Surveillance System(BRFSS) and Population Level Analysis and Community Estimates(PLACES). They key variable was hypertension prevalence.
+
+#### Census Data
+
+We use tract-level data from the U.S. Census Bureau’s American Community Survey (ACS), focusing on variables with economic, demographic, and housing characteristics. Key variables include measures of age, racial composition, socioeconomic status and community resilience indicators (CREs) adapted from the census.
+
+
+Hypertension prevalence was available biannually. To construct a complete annual time series (2013–2024), we linearly interpolated missing values using zoo::na.approx() in R.
+
+
+This study adopted an ex-post facto research design, which is appropriate for assessing historical relationships among variables without manipulating the data. The research focused on the District of Columbia, using annual time series data spanning from 2014 to 2024. This timeframe was selected to capture a recent and policy-relevant period in which socioeconomic and health dynamics have significantly evolved in the United States.
+The study relied exclusively on secondary data sourced from credible public databases such as the United States Census Bureau, Centers for Disease Control and Prevention (CDC), and the Bureau of Labor Statistics (BLS). The variables considered include hypertension mortality rate (HTP) as the dependent variable, and four independent variables: poverty rate (POV), unemployment rate (UER), lack of health insurance (LIN), and the proportion of the elderly population aged 65 and above (AGE65). Population density was initially considered a control variable but was excluded from the final model due to statistical insignificance during specification.
+Geographical coverage of this research is limited to the District of Columbia of the United States between 2014 and 2024. This specific analysis aims to explore the impact of four socioeconomic indicators—specifically, the rate of poverty, unemployment rate, uninsured health coverage, and percentage of persons 65 and older—on mortality rates linked to hypertension using secondary time series data. In assessing interaction between mortality outcomes of hypertension and these socioeconomic indicators both in short-run and long-run periods, Autoregressive Distributed Lag (ARDL) approach was chosen as a method of analysis. It was chosen because of its flexibility regarding variables having integration at I(0) and data integration at I(1), and suitability for small data samples. Specification of the model was conducted using Akaike Information Criterion (AIC), followed by a comprehensive set of diagnostic tests designed to examine robustness of a model, including tests for unit roots, cointegration, and serial correlation.
+
+#### Model Specification
+The study analyzed the relationship between hypertension-attributable mortality and other socioeconomic indicators using the Autoregressive Distributed Lag (ARDL) model, which is well suited for time series data analysis by classifying variables based on their integration orders as either I(0) or I(1) variables. In this context, Hypertension Mortality Rate (HTP) is treated as the variable of central focus, whereas Poverty Rate (POV), Unemployment Rate (UER), Non-availability of Health Insurance (LIN), and Percentage of Elderly Population (AGE65) are treated as independent variables.
+Mathematically, the relationship is expressed as:
+
+$$
+HTP = f(POV,UNEMP,LINS,AGE65)
+$$
+
+
+Where:
+HTP = Hypertension Prevalence (dependent variable)
+POV = Poverty Rate
+UER = Unemployment rate
+LIN = Lack of health insurance (% without coverage)
+AGE65 = Elderly population (% aged 65 and above)
+The corresponding econometric (estimable) model is specified as:
+
+$$
+HTP_t = B_0+ B_1POV_t + B_2UER_t + B_3LIN_t + B_4AGE65_t + ø_t
+$$
+Where:
+ B_o is the intercept,
+ B_1,B_2,...B_5 are the coefficients measuring the marginal effect of each independent variable,
+ I is the error term,
+ i indexes the geographic unit
+ 
+ $$
+ B_0 = intercept
+ B_1,B_2,...B_5 = coefficients
+ I = error term
+ i = geographic unit
+ $$
+ 
+ 
+#### Estimation Technique
+The Autoregressive Distributed Lag (ARDL) bounds testing approach of Pesaran, Shin, and Smith (2001) was used in this study to estimate short-run and long-run relationship between mortality from hypertension and particular socioeconomic indicators. It was chosen because of its flexibility in taking regressors as a zero-order or I(0) or first-order or I(1), thus eliminating the preliminary test procedures commonly used to estimate cointegration rank, a common hurdle found with conventional techniques like Johansen's method.
+The estimation process started by imposing unit root tests based on the Augmented Dickey-Fuller (ADF) approach to determining the order of integration of a particular variable. After ascertaining that none of the time series was of I(2), I proceeded with using the Autoregressive Distributed Lag (ARDL) model. Choice of the best lag size for this model was based on the Akaike Information Criterion (AIC), aiming to strike a compromise between model simplicity and sufficiency of fit.
+The cointegration bounds test on ARDL was then conducted to determine if there exists a long-run relationship between the variables. On confirming cointegration, the long-run parameters were estimated from the model.
+
+
+#### Composite Resilience Index via PCA
+To capture the multidimensionality of neighborhood-level structural vulnerability, we constructed a Composite Resilience Estimate (CRE) using Principal Component Analysis (PCA). Four standardized variables were selected to represent distinct dimensions of social and economic risk: poverty rate (POV), unemployment rate (UER), lack of health insurance (LIN), and percentage of the population aged 65 and older (AGE65). These indicators align with key social determinants of health (SDH) and reflect structural disparities that may influence hypertension outcomes. PCA was conducted with variables standardized (z-scores) to ensure comparability, and the first principal component (PC1) was extracted to form the CRE index. The index is interpreted such that higher values indicate greater cumulative structural resilience.
+
+#### 📦 Load Required Packages
+```{r}
+#Install 
+#install.packages(c("dLagM", "urca", "lmtest", "car", "ggplot2", "tseries"))
+#install.packages("tsbox")
+#install.packages("ARDL")
+#install.packages(c("tidycensus", "tidyverse", "sf"))
+
+
+library(dLagM)
+library(urca)
+library(lmtest)
+library(car)
+library(ggplot2)
+library(tseries)
+library(tidyverse)
+library(tsbox)
+library(ARDL)
+library(tidycensus)
+library(sf)
+library(tidyverse)
+library(readr)
+
+# Read the CSV file
+brfss_data <- read_csv("/Users/bayowaonabajo/Downloads/Behavioral_Risk_Factor_Surveillance_System__BRFSS__Age-Adjusted_Prevalence_Data__2011_to_present_.csv")
+
+dc_hypertension <- brfss_data %>%
+  filter(Locationdesc == "District of Columbia",
+         Year >= 2013 & Year <= 2024,
+         Topic == "High Blood Pressure",
+         Question == "Adults who have been told they have high blood pressure (variable calculated from one or more BRFSS questions)") %>%
+  select(Year, Locationdesc, Response, Data_value,Sample_Size,Data_value_unit,Data_value_type,DataSource, Confidence_limit_Low, Confidence_limit_High, Geolocation)
+
+# View the results
+View(dc_hypertension)
+```
+
+
+
+```{r}
+library(tidycensus)
+library(dplyr)
+library(purrr)
+
+# Census API key
+api_key <- Sys.getenv("CENSUS_API_KEY")
+census_api_key(api_key, overwrite = TRUE)
+
+variables <- c(
+  poverty_rate = "B17001_002",
+  unemployment_rate = "B23025_005",
+  no_health_insurance = "B27010_033",
+  education_less_than_hs = "B15003_002",
+  median_age = "B01002_001",
+  black_population = "B02001_003",
+  white_population = "B02001_002",
+  american_indian_alaska_native_alone = "B02001_004",
+  asian_alone = "B02001_005",
+  native_hawaiian_other_pacific_islander_alone = "B02001_006",
+  
+  male_65_69 = "B01001_017",
+  male_70_74 = "B01001_018",
+  male_75_79 = "B01001_019",
+  male_80_84 = "B01001_020",
+  male_85plus = "B01001_021",
+  female_65_69 = "B01001_041",
+  female_70_74 = "B01001_042",
+  female_75_79 = "B01001_043",
+  female_80_84 = "B01001_044",
+  female_85plus = "B01001_045"
+)
+
+years <- 2013:2024
+
+get_acs_year <- function(year) {
+  tryCatch({
+    data <- get_acs(
+      geography = "tract",
+      year = year,
+      state = "11",
+      survey = "acs5",
+      variables = variables,
+      summary_var = "B01001_001", 
+      output = "wide",
+      geometry = FALSE
+    )
+    data$year <- year
+    return(data)
+  }, error = function(e) {
+    message(paste("Error getting data for year", year, ":", e$message))
+    return(NULL)
+  })
+}
+
+# Get data and calculate rates
+dc_ACS_all_years <- map_df(years, possibly(get_acs_year, otherwise = NULL)) %>%
+  mutate(
+    # 1. Calculate total 65+
+    total_65plus = male_65_69E + male_70_74E + male_75_79E + male_80_84E + male_85plusE +
+                   female_65_69E + female_70_74E + female_75_79E + female_80_84E + female_85plusE,
+    
+    # Calc rates(B01001_001E)
+    # Basic rates
+    poverty_rate_pct = (poverty_rateE / summary_est) * 100,
+    unemployment_rate_pct = (unemployment_rateE / summary_est) * 100,
+    no_health_insurance_pct = (no_health_insuranceE / summary_est) * 100,
+    education_less_than_hs_pct = (education_less_than_hsE / summary_est) * 100,
+    
+    # race percentages
+    black_population_pct = (black_populationE / summary_est) * 100,
+    white_population_pct = (white_populationE / summary_est) * 100,
+    american_indian_pct = (american_indian_alaska_native_aloneE / summary_est) * 100,
+    asian_pct = (asian_aloneE / summary_est) * 100,
+    pacific_islander_pct = (native_hawaiian_other_pacific_islander_aloneE / summary_est) * 100,
+    
+    # Age 65+ percentage
+    pct_65plus = (total_65plus / summary_est) * 100,
+    
+    # race percentages among 65+ population
+    black_65plus_pct = ifelse(total_65plus > 0, (black_populationE / total_65plus) * 100, NA),
+    white_65plus_pct = ifelse(total_65plus > 0, (white_populationE / total_65plus) * 100, NA),
+    asian_65plus_pct = ifelse(total_65plus > 0, (asian_aloneE / total_65plus) * 100, NA),
+  )
+
+# View results
+glimpse(dc_ACS_all_years)
+View(dc_ACS_all_years)
+
+# write.csv(dc_ACS_all_years, "dc_acs_rates_2013_2024.csv", row.names = FALSE)
+```
+
+
+
+```{r}
+library(tidyverse)
+library(readr)
+
+# Read Csv file
+HtnPrevalence_datadc <- read_csv("/Users/bayowaonabajo/Downloads/indicator_data_download_20250703.csv", col_types = cols(
+    `Indicator Name` = col_character(),
+    `What Is This Indicator` = col_character(),
+    `Location Type` = col_character(),
+    `Location` = col_character(),
+    `Indicator Rate Value` = col_double(),
+    `Indicator Rate Value Units` = col_character(),
+    `Rate Lower Confidence Interval` = col_double(),
+    `Rate Upper Confidence Interval` = col_double(),
+    `Indicator Count Value` = col_skip(),  
+    `Indicator Count Value Units` = col_skip(),  
+    `Count Lower Confidence Interval` = col_skip(),  
+    `Count Upper Confidence Interval` = col_skip(),  
+    `Indicator Value Unstable` = col_character(),
+    `Period of Measure` = col_integer(),
+    `Data Source` = col_character(),
+    `Technical Note` = col_character(),
+    `Breakout Title` = col_skip(),  
+    `Breakout Category` = col_skip(),  
+    `Breakout Subcategory` = col_skip(),  
+    `Breakout Rate Value` = col_skip(),  
+    `Breakout Rate Value Units` = col_skip(),  
+    `Breakout Rate Lower Confidence Interval` = col_skip(),  
+    `Breakout Rate Upper Confidence Interval` = col_skip(),  
+    `Breakout Count Value` = col_skip(),  
+    `Breakout Count Value Units` = col_skip(),  
+    `Breakout Count Lower Confidence Interval` = col_skip(),  
+    `Breakout Count Upper Confidence Interval` = col_skip(),  
+    `Breakout Unstable` = col_skip(), 
+    `Breakout Footer` = col_skip()  
+  )
+)
+
+View(HtnPrevalence_datadc) 
+```
+
+
+```{r}
+# Clean the necessary columns
+htn_tract_clean <- HtnPrevalence_datadc %>%
+  filter(`Indicator Name` == "High Blood Pressure Prevalence",
+         `Location Type` == "Census Tract") %>%
+  rename(
+    GEOID = Location,
+    year = `Period of Measure`,
+    HTP = `Indicator Rate Value`
+  ) %>%
+  mutate(
+    GEOID = as.character(GEOID),
+    year = as.integer(year)
+  ) %>%
+  select(GEOID, year, HTP)
+
+# Check structure
+glimpse(htn_tract_clean)
+```
+
+
+```{r}
+acs_summary <- dc_ACS_all_years %>%
+  group_by(year) %>%
+  summarise(
+    POV = mean(poverty_rate_pct, na.rm = TRUE),
+    UER = mean(unemployment_rate_pct, na.rm = TRUE),
+    LIN = mean(no_health_insurance_pct, na.rm = TRUE),
+    AGE65 = mean(pct_65plus, na.rm = TRUE),
+    ASIAN = mean(asian_pct, na.rm = TRUE),
+    PACIFIC = mean(pacific_islander_pct, na.rm = TRUE),
+    AMERICANINDIAN = mean(american_indian_pct, na.rm = TRUE),
+    BLACK = mean(black_population_pct, na.rm = TRUE),
+    WHITE = mean(white_population_pct, na.rm = TRUE)
+  )
+```
+
+
+```{r}
+library(tidyr)
+library(zoo)
+
+# Interpolate, Create full panel
+htn_tract_full <- htn_tract_clean %>%
+  complete(GEOID, year = 2013:2024) %>%
+  group_by(GEOID) %>%
+  arrange(year) %>%
+  mutate(HTP_interp = na.approx(HTP, year, rule = 2)) %>%
+  ungroup()
+
+```
+
+
+```{r}
+
+dc_ACS_all_years <- dc_ACS_all_years %>%
+  mutate(GEOID = as.character(GEOID))
+
+df1  <- dc_ACS_all_years %>%
+  left_join(htn_tract_full, by = c("GEOID", "year"))
+
+View(df1)
+```
+
+
+```{r}
+# Clean table for analysis
+df2 <- df1 %>%
+  select(
+    GEOID,
+    NAME,
+    year,
+    HTP_interp,           # Interpolated hypertension prevalence
+    poverty_rate_pct,     # POV
+    unemployment_rate_pct, # UER
+    no_health_insurance_pct, # LIN
+    pct_65plus,           # AGE65
+    asian_pct,            # ASIAN
+    pacific_islander_pct, # PACIFIC
+    american_indian_pct,  # AMERICANINDIAN
+    black_population_pct, # BLACK
+    white_population_pct  # WHITE
+  ) %>%
+  rename(
+    Year = year,
+    HTP = HTP_interp,
+    POV = poverty_rate_pct,
+    UER = unemployment_rate_pct,
+    LIN = no_health_insurance_pct,
+    AGE65 = pct_65plus,
+    ASIAN = asian_pct,
+    PACIFIC = pacific_islander_pct,
+    AMERICANINDIAN = american_indian_pct,
+    BLACK = black_population_pct,
+    WHITE = white_population_pct
+  )
+View(df2)
+
+```
+
+
+```{r}
+library(dplyr)
+
+# 1. Check column types first
+str(df2)
+
+# 2. Select only numeric columns for missing analysis
+numeric_cols <- df2 %>% 
+  select(where(is.numeric))  # Only numeric columns
+
+# 3. Calculate missing data properly
+total_rows <- nrow(numeric_cols)
+missing_counts <- colSums(is.na(numeric_cols))
+missing_percentages <- (missing_counts / total_rows) * 100
+
+# 4. Print results sorted by most missing
+missing_percentages %>% 
+  sort(decreasing = TRUE) %>% 
+  print()
+
+# 5. Remove rows with NAs (only from numeric columns)
+df <- df2 %>% 
+  filter(complete.cases(numeric_cols))
+
+# 6. Verify results
+glimpse(df)
+```
+
+
+
+
+```{r}
+
+library(dplyr)
+library(plotly)
+
+# Step 1: Calculate yearly averages
+df_yearly <- df %>%
+  group_by(Year) %>%
+  summarise(
+    HTP = mean(HTP, na.rm = TRUE),
+    POV = mean(POV, na.rm = TRUE),
+    UER = mean(UER, na.rm = TRUE),
+    LIN = mean(LIN, na.rm = TRUE),
+    AGE65 = mean(AGE65, na.rm = TRUE)
+  )
+
+# Step 2: Create AND STORE interactive plot
+interactive_plot <- plot_ly(df_yearly, x = ~Year) %>%
+  add_lines(y = ~HTP, name = "Hypertension (%)", line = list(color = "red")) %>%
+  add_lines(y = ~POV, name = "Poverty (%)", line = list(color = "blue")) %>%
+  add_lines(y = ~UER, name = "Unemployment (%)", line = list(color = "green")) %>%
+  add_lines(y = ~LIN, name = "No Insurance (%)", line = list(color = "purple")) %>%
+  add_lines(y = ~AGE65, name = "Age 65+ (%)", line = list(color = "orange")) %>%
+  layout(
+    title = "DC Yearly Averages (2013-2023)",
+    xaxis = list(title = "Year", dtick = 1),
+    yaxis = list(title = "Percentage (%)"),
+    hovermode = "x unified"
+  )
+
+# Now you can display it
+interactive_plot
+```
+
+## Statistical Analysis
+
+#### Descriptive Statistics
+```{r}
+summary(df[,-1])
+apply(df[,-1], 2, sd)
+```
+Average age-adjusted hypertension prevalence (HTP) across D.C. census tracts in 2013 was 26.4%, with values ranging from 0.0% to 44.4%.
+
+```{r}
+library(tseries)
+
+#  Select only numeric columns
+numeric_cols <- df %>% select(where(is.numeric))
+
+# Calculate statistics
+results <- data.frame(
+  Mean = sapply(numeric_cols, mean, na.rm = TRUE),
+  SD = sapply(numeric_cols, sd, na.rm = TRUE),
+  Sum_Sq_Dev = sapply(numeric_cols, function(x) sum((x - mean(x, na.rm = TRUE))^2, na.rm = TRUE)),
+  JB_p_value = sapply(numeric_cols, function(x) {
+    if (length(na.omit(x)) >= 4) {  # Jarque-Bera requires min 4 observations
+      jarque.bera.test(na.omit(x))$p.value 
+    } else {
+      NA
+    }
+  })
+)
+
+# 3. Display results
+round(results, 4)
+
+```
+
+
+```{r}
+# Simple linear regressions
+lm_black <- lm( HTP ~ BLACK, data = df)
+summary(lm_black)
+
+lm_white <- lm(HTP ~ WHITE, data = df)
+summary(lm_white)
+
+lm_ai_an <- lm(HTP ~ AMERICANINDIAN, data = df)
+summary(lm_ai_an)
+
+lm_asian <- lm(HTP ~ ASIAN, data = df)
+summary(lm_asian)
+
+lm_pacific <- lm(HTP ~ PACIFIC, data = df)
+summary(lm_pacific)
+
+```
+
+
+####  Correlation Matrix
+```{r}
+numeric_df <- df[, -1] %>% select_if(is.numeric)
+cor(numeric_df)
+```
+
+
+```{r}
+str(df)
+
+numeric_df <- df %>% select(-1) %>% select_if(is.numeric)
+
+corrplot::corrplot(cor(numeric_df))
+```
+
+
+```{r}
+str(df %>% select(HTP, BLACK, WHITE, AMERICANINDIAN, ASIAN, PACIFIC))
+
+cor_data <- df %>%
+  select(
+    HTP,
+    BLACK,
+    WHITE,
+    AMERICANINDIAN,
+    ASIAN,
+    PACIFIC  
+  ) %>%
+  mutate(across(everything(), ~ as.numeric(as.character(.)))) %>%  
+  filter(complete.cases(.))  # Remove NAs
+
+#Verify all columns are numeric
+stopifnot(all(sapply(cor_data, is.numeric)))  
+
+#Correlation matrix
+cor_matrix <- cor(cor_data, use = "complete.obs")
+
+#View results with significance stars
+print(cor_matrix)
+```
+
+
+
+```{r}
+#Conversion to time-series obj
+df_ts <- ts(df, start = 2013, frequency = 1)
+
+# stationarity
+adf.test(df$HTP)  
+```
+
+
+
+####  Augmented Dickey-Fuller Unit Root Test
+```{r}
+library(tseries)
+
+# Safely identify numeric columns (excluding first column)
+numeric_cols <- which(sapply(df, is.numeric))
+if(length(numeric_cols) > 1) {
+  numeric_cols <- numeric_cols[-1]  # Remove first column if it's numeric
+  adf_results <- lapply(df[, numeric_cols, drop = FALSE], function(x) {
+    x_clean <- na.omit(as.numeric(x))
+    if(length(x_clean) > 8) adf.test(x_clean) else NULL  # ADF requires min 8 obs
+  })
+  adf_results <- Filter(Negate(is.null), adf_results)
+} else {
+  warning("Insufficient numeric columns for ADF testing")
+  adf_results <- list()
+}
+adf_results
+
+
+```
+
+```{r}
+library(tibble)
+
+adf_results <- tribble(
+  ~Variable, ~ADF_Statistic, ~P_Value, ~Conclusion,
+  "HTP", -9.749, "< 0.01", "Stationary",
+  "POV", -10.734, "< 0.01", "Stationary",
+  "UER", -9.3261, "< 0.01", "Stationary",
+  "LIN", -11.609, "< 0.01", "Stationary",
+  "AGE65", -10.972, "< 0.01", "Stationary",
+  "ASIAN", -9.1452, "< 0.01", "Stationary",
+  "PACIFIC", -11.956, "< 0.01", "Stationary",
+  "AMERICANINDIAN", -12.086, "< 0.01", "Stationary",
+  "BLACK", -9.6922, "< 0.01", "Stationary",
+  "WHITE", -10.328, "< 0.01", "Stationary"
+)
+
+knitr::kable(adf_results, caption = "ADF Test Results for Variables")
+
+```
+
+All variables were tested for stationarity using the Augmented Dickey-Fuller (ADF) test. As shown in Table above, all were stationary at level (I(0)), allowing for ARDL modeling without differencing
+
+
+#### Q1,Q2,Q3,Q4?
+#### linear Regression
+```{r}
+library(lmtest)
+library(car)
+
+# Ensure variables are numeric and complete cases
+model_data <- na.omit(df[, c("HTP", "POV", "UER", "LIN", "AGE65")])
+model <- lm(HTP ~ POV + UER + LIN + AGE65, data = model_data)
+summary(model)
+
+# Diagnostics
+par(mfrow = c(2, 2))
+plot(model)  
+dwtest(model)  # Durbin-Watson test
+```
+The baseline linear model (HTP ~ POV + UER + LIN + AGE65) showed: Poverty is the most significant predictor (β = 0.45, p < 0.001).Unemployment and AGE65 are also statistically significant (p < 0.05).
+
+#### Q1,Q2,Q3,Q4?
+#### ARDL Model Estimation
+```{r}
+library(ARDL)
+library(dplyr)
+
+# Prepare data - ensure numeric and complete cases
+ardl_data <- na.omit(df[, c("HTP", "POV", "UER", "AGE65")]) %>% 
+  mutate(across(everything(), as.numeric))
+
+ardl_model <- ardl(HTP ~ POV + UER + AGE65, data = ardl_data,
+                   order = c(1, 0, 1, 0))
+summary(ardl_model)
+```
+
+An ARDL model was estimated based on AIC.
+Long-run coefficients, POV and UER remained significant.
+
+
+#### Q1,Q2,Q3,Q4?
+#### Cointegration (Bounds) Test
+```{r}
+library(ARDL)
+
+# Estimate ARDL model
+ardl_model <- ardl(HTP ~ POV + UER + AGE65, data = df, order = c(1, 0, 1, 0))
+
+#Bounds test for cointegration
+bounds_test <- bounds_f_test(ardl_model, case = 3)
+print(bounds_test)
+
+### Long Run and Short Run Estimates
+
+library(ARDL)
+
+ecm_model <- uecm(ardl_model)
+summary(ecm_model)
+
+coefs <- coefficients(ardl_model)
+print(coefs)
+
+```
+
+
+### Q1,Q2?
+#### Normality
+```{r}
+library(tseries)
+
+# Estimate
+ardl_model <- ardl(HTP ~ POV + UER, data = df, order = c(1, 0, 1))
+
+# test normality
+residuals <- residuals(ardl_model)
+jarque.bera.test(residuals)
+```
+
+#### Q1,Q2?
+#### Heteroskedasticity
+```{r}
+library(lmtest) 
+
+# Est
+ardl_model <- ardl(HTP ~ POV + UER, data = df, order = c(1, 0, 1))
+
+# Breusch-Pagan test 
+bptest(ardl_model)  
+```
+
+#### Serial Correlation
+```{r}
+library(lmtest)
+bgtest(ardl_model, order = 2)
+```
+
+#### Model Specification (RESET)
+```{r}
+
+resettest(ardl_model)
+```
+
+
+#### Variance inflation factor (VIF)
+Testing collinearity in variables with a value above 5 suggesting collinearity with poor outcomes on the model and value of 1 suggesting no collinearity.
+Variance Inflation Factors are used to assess the contribution of each predictor variable to the model and to identify those that are collinear. (Akinwande et al. 2015)"
+```{r}
+car::vif(model)  # Variance Inflation Factor
+```
+
+#### Q1,Q2,Q3,Q4?
+#### Residual Plot
+```{r}
+plot(residuals(ardl_model), type="o", main="Residuals of ARDL Model", col="blue")
+abline(h=0, col="red", lty=2)
+```
+
+#### Composite Resilience or Vulnerability Index (CRE) with Principal Component Analysis
+
+Independent variables are POV, UER, which are CRE factors
+Dependent variable is HTP
+
+#### Composite Resilience factors on Hypertension
+
+$$
+HTP ~ POV, HTP ~ BLACK
+$$
+We address the multidimensionality of socioeconomic vulnerability, we constructed a composite index using Principal Component Analysis (PCA). The PCA model included four standardized predictors: poverty rate (POV), unemployment rate (UER), lack of health insurance (LIN), and percent of the population aged 65 or older (AGE65). These variables capture economic hardship, employment instability, healthcare exclusion, and aging vulnerability.
+Variable loadings indicated that [POV and UER contributed most, followed by LIN and AGE65]. This component was interpreted as a Composite Resilience Estimate (CRE), where higher values denote greater structural vulnerability. The CRE was used as an explanatory variable in regression models predicting hypertension prevalence (HTP).
+
+```{r}
+# PCA to summarize structural resilience/vulnerability
+vars <- c("POV", "UER", "LIN", "AGE65")
+pca <- prcomp(df[, vars], scale. = TRUE)
+#summarize
+summary(pca)
+pca$rotation
+```
+
+#### PCA Results
+```{r}
+# Principal component as CRE
+df$CRE_pca <- as.numeric(pca$x[, 1])
+
+# Regress HTP on the CRE
+model_cre <- lm(HTP ~ CRE_pca, data = df)
+summary(model_cre)
+```
+
+
+```{r}
+ggplot(df, aes(x = CRE_pca, y = HTP)) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "lm", color = "blue") +
+  labs(title = "HTP vs Composite Resilience Vulnerability Index", x = "CRE (PCA)", y = "Hypertension Prevalence")
+
+```
+
+
+
+### Mapping
+```{r}
+# Get spatial data for DC tracts
+library(tidycensus)
+dc_tracts <- get_acs(
+  geography = "tract",
+  state = "11",
+  variables = "B01001_001",
+  year = 2023,
+  geometry = TRUE,
+  output = "wide"
+)
+
+# Create df_map by joining analysis data with spatial data
+df_map <- df2 %>% 
+  filter(Year == 2023) %>% 
+  left_join(dc_tracts %>% select(GEOID, geometry), by = "GEOID") %>% 
+  st_as_sf()
+```
+
+
+
+```{r}
+library(sf)
+library(ggplot2)
+
+# Ensure df_map has geometry
+if(exists("df_map") && "sf" %in% class(df_map)) {
+  choropleth_imputed <- df_map %>%
+    st_make_valid() %>%
+    mutate(
+      HTP = coalesce(as.numeric(HTP), mean(as.numeric(HTP), na.rm = TRUE)),
+      POV = coalesce(as.numeric(POV), mean(as.numeric(POV), na.rm = TRUE)),
+      AGE65 = coalesce(as.numeric(AGE65), mean(as.numeric(AGE65), na.rm = TRUE)),
+      UER = coalesce(as.numeric(UER), mean(as.numeric(UER), na.rm = TRUE)),
+      LIN = coalesce(as.numeric(LIN), mean(as.numeric(LIN), na.rm = TRUE))
+    ) %>%
+    filter(!st_is_empty(.))
+  
+  # Get unified scale limits
+  value_range <- range(c(choropleth_imputed$HTP, choropleth_imputed$POV, 
+                        choropleth_imputed$AGE65,choropleth_imputed$UER,choropleth_imputed$LIN), na.rm = TRUE)
+  
+  # Plotting function
+  create_map <- function(data, var, title) {
+    ggplot(data) +
+      geom_sf(aes(fill = {{ var }}), color = "black", size = 0.1) +
+      scale_fill_viridis_c(
+        name = "Rate (%)",
+        limits = value_range,
+        option = "plasma",
+        na.value = "gray"
+      ) +
+      labs(title = title) +
+      theme_void()
+  }
+  
+  # Generate maps
+  map_hypertension <- create_map(choropleth_imputed, HTP, "Hypertension (2023)")
+  map_poverty <- create_map(choropleth_imputed, POV, "Poverty (2023)")
+  map_age65 <- create_map(choropleth_imputed, AGE65, "Age 65+ (2023)")
+  map_unemployed <- create_map(choropleth_imputed, UER, "Unemployed (2023)")
+  map_nohealthinsurance <- create_map(choropleth_imputed, LIN, "No Health Insurance (2023)")
+  
+  # Arrange
+  gridExtra::grid.arrange(map_hypertension, map_poverty, map_age65,map_unemployed,map_nohealthinsurance, ncol = 5)
+} else {
+  warning("Spatial data not available - skipping mapping section")
+}
+```
+
+
+
+# Spatial Analysis
+```{r}
+#install.packages("spData")
+library(spdep)
+library(sf)
+library(tmap)
+
+# Prepare spatial data
+df_sf <- st_as_sf(df_map) %>% 
+  st_transform(26918)  # UTM Zone 18N for DC
+
+# Create neighbors list (queen contiguity)
+nb <- poly2nb(df_sf, queen = TRUE)
+
+# imputation with NA safety
+df_sf$HTP_imputed <- df_sf$HTP  # Initialize
+
+# Get indices of NA values
+na_indices <- which(is.na(df_sf$HTP))
+
+for (i in na_indices) {
+  neighbor_values <- df_sf$HTP[nb[[i]]]  # Get neighbor values
+  valid_neighbors <- neighbor_values[!is.na(neighbor_values)]
+  
+  if (length(valid_neighbors) > 0) {
+    df_sf$HTP_imputed[i] <- mean(valid_neighbors)
+  }
+}
+
+# 4. Prep Moran's test 
+valid_tracts <- !is.na(df_sf$HTP_imputed)
+df_sf_valid <- df_sf[valid_tracts, ]
+
+# subset weights matrix
+nb_valid <- subset.nb(nb, valid_tracts)
+weights_valid <- nb2listw(nb_valid, style = "W")
+
+# Moran's test
+if (sum(valid_tracts) > 1) {  # Need at least 2 observations
+  moran_result <- moran.test(df_sf_valid$HTP_imputed, weights_valid)
+  print(moran_result)
+} else {
+  warning("Insufficient non-NA values for Moran's test")
+}
+
+# Visualize with NA handling
+tm_shape(df_sf) +
+  tm_fill("HTP_imputed",
+          palette = "Reds",
+          style = "quantile",
+          title = "Hypertension (%)",
+          textNA = "No Data (Insufficient Neighbor Estimates)",
+          colorNA = "lightgray") +
+  tm_borders(col = "white", lwd = 0.3) +
+  tm_layout(main.title = "Spatially Imputed Hypertension Prevalence",
+            legend.outside = TRUE)
+
+
+```
+
+
+```{r}
+library(spdep)
+library(spatialreg)
+
+# 1. Ensure valid geometries
+df_sf_valid <- df_sf %>%
+  st_make_valid() %>%
+  filter(complete.cases(HTP, POV, UER))
+
+# 2. Create neighbors with zero policy
+nb <- poly2nb(df_sf_valid, queen = TRUE)
+weights <- nb2listw(nb, style = "W", zero.policy = TRUE)
+
+# 3. Check neighbor counts
+print(table(card(nb)))  # Shows how many neighbors each tract has
+
+# 4. Run model with zero.policy
+spatial_lag <- lagsarlm(
+  HTP ~ POV + UER,
+  data = df_sf_valid,
+  listw = weights,
+  method = "eigen",
+  zero.policy = TRUE
+)
+
+summary(spatial_lag)
+
+
+```
+
+
+```{r}
+tm_shape(df_sf) +
+  tm_fill("POV", palette = "Blues", style = "quantile", title = "Poverty Rate (%)") +
+  tm_borders(lwd = 0.5, col = "gray") +
+  tm_layout(main.title = "Poverty Rate by Census Tract",
+            legend.outside = TRUE)
+
+```
+
+```{r}
+# Spatial regression significance testing
+library(spdep)
+library(spatialreg)
+
+# Clean data 
+df_sf_clean <- df_sf %>%
+  st_make_valid() %>%
+  filter(!is.na(HTP), !is.na(POV), !is.na(UER))
+
+# Recompute neighbors and weights
+nb <- poly2nb(df_sf_clean, queen = TRUE)  
+weights <- nb2listw(nb, style = "W", zero.policy = TRUE)  # Allow isolated tracts
+
+# Verify dimensions
+cat(
+  "Data rows:", nrow(df_sf_clean), "\n",
+  "Weights length:", length(weights$neighbours), "\n"
+)
+
+# Run regression
+spatial_lag <- lagsarlm(
+  HTP ~ POV + UER,
+  data = df_sf_clean,
+  listw = weights,
+  zero.policy = TRUE  # Critical if some tracts have no neighbors
+)
+summary(spatial_lag)
+```
+
+
+
+#Results
+
+#### Descriptive and Correlation Analysis
+
+The study analyzed hypertension prevalence (HTP) and socioeconomic factors across Washington, D.C. census tracts (2014–2024). Descriptive statistics revealed substantial variation in hypertension prevalence (mean = 30.14%, SD = 9.92), poverty rates (mean = 16.76%, SD = 12.29), unemployment (mean = 5.11%, SD = 3.51), and the elderly population (mean = 14.35%, SD = 4.97). Correlation analysis demonstrated strong positive associations between HTP and poverty (r = 0.60, p < 0.001) and unemployment (r = 0.60, p < 0.001), while the proportion of elderly residents showed a moderate positive correlation (r = 0.46, p < 0.001). Notably, HTP exhibited a strong positive correlation with the Black population (r = 0.90, p < 0.001) and a strong negative correlation with the White population (r = -0.88, p < 0.001), highlighting persistent racial disparities in hypertension outcomes.
+
+#### Regression and Time-Series Analysis
+
+Linear regression models confirmed significant associations between socioeconomic factors and HTP. A 1% increase in poverty was associated with a 0.35% rise in HTP (β = 0.35, SE = 0.02, p < 0.001), while unemployment showed a similar effect (β = 0.72, SE = 0.05, p < 0.001). The Autoregressive Distributed Lag (ARDL) model further revealed long-run relationships, with lagged unemployment effects negatively impacting HTP (β = -0.16, SE = 0.05, p = 0.001), suggesting delayed health consequences of economic instability.
+
+#### Spatial Dependence and Clustering
+
+Spatial analysis using Moran’s I test indicated significant clustering of HTP (I = 0.83, p < 0.001), demonstrating that hypertension prevalence in one tract strongly influenced neighboring tracts. The spatial lag model (ρ = 0.69, p < 0.001) confirmed that local HTP rates were not only shaped by socioeconomic conditions but also by spatial proximity, underscoring the role of neighborhood-level factors in health disparities.
+
+#### Model Diagnostics
+
+Diagnostic tests confirmed model robustness. Variance inflation factors (VIF < 2) ruled out multicollinearity, while the Breusch-Pagan test indicated minor heteroskedasticity (p < 0.01). No significant autocorrelation was detected (Durbin-Watson p > 0.05), supporting the validity of the regression estimates.
+
+#### Principal Component Analysis and Structural Vulnerability
+
+To model structural socioeconomic vulnerabilities beyond single-variable regressions, we performed a Principal Component Analysis (PCA) using four standardized indicators: poverty rate (POV), unemployment rate (UER), lack of health insurance (LIN), and the percentage of residents aged 65+ (AGE65). These indicators were selected for their strong conceptual link to structural vulnerability and social determinants of health.
+Results of PCA:
+
+The first principal component (PC1) captured 44.7% of the total variance and was interpreted as a composite structural vulnerability index (CRE_pca). The factor loadings for PC1 were:
+
+Variable	PC1 Loading
+POV	       -0.636
+UER.    	 -0.657
+LIN	       -0.399
+AGE65	     -0.065
+These weights indicate that poverty and unemployment were the dominant contributors to structural vulnerability. Since all loadings are negative, higher CRE_pca values (less negative) reflect lower vulnerability, and vice versa.
+
+We then regressed hypertension prevalence (HTP) on this index: 
+$$
+summary(lm(HTP ~ CRE_Pca, data = df))
+$$
+This model showed a statistically significant negative relationship:
+
+Coefficient (CRE_pca) of −4.83, p-value less than 2e−16 and R² of 42%
+Thus, a one-unit increase in community resilience (i.e., lower vulnerability) corresponds to an approximate 4.8 percentage point decrease in hypertension prevalence in a given D.C area.
+
+# Discussion of Findings
+
+#### Race and Structural Factors Are Good Predictors
+
+Bivariate regressions revealed a remarkably strong positive association between Black population and hypertension prevalence, and a near-perfect negative relationship for White population. These findings align with national data on health disparities by race but also call attention to the spatial concentration of vulnerability in Black-majority neighborhoods.
+
+#### Poverty and Unemployment Have Independent Effects
+
+This study provides robust evidence that structural socioeconomic factors—particularly poverty and unemployment—are critical drivers of hypertension mortality in Washington, D.C. These findings align with the Social Determinants of Health (SDH) framework (Marmot et al., 2008), emphasizing how economic deprivation limits healthcare access and exacerbates chronic stress, thereby increasing hypertension risk. The negative lagged effect of unemployment suggests that job loss may have delayed health consequences, possibly due to financial strain or reduced preventive care utilization.
+Multivariate models showed that poverty (POV) and unemployment (UER) remain significant predictors of hypertension prevalence even when controlling for health insurance and age. This suggests that structural material deprivation operates independently of access to care.
+Grossman’s Health Capital Theory (1972) further contextualizes these results, as individuals in economically disadvantaged areas face barriers to investing in health (e.g.,regular medical check-ups). The insignificant long-run effect of health insurance may reflect Medicaid expansion in D.C., mitigating some access barriers—though further research is needed to assess coverage adequacy.
+
+#### Composite Structural Vulnerability (CRE_pca) 
+
+The use of PCA to create a Community Resilience Estimate (CRE_pca) showed that over 42% of the variation in hypertension prevalence could be explained by structural socioeconomic burden alone.
+
+#### Importance of Spatial Dependence 
+
+Spatial lag models confirmed that hypertension prevalence is not randomly distributed across space. High-prevalence tracts were significantly clustered, and spatial autoregressive models further validated the contribution of poverty and unemployment even after adjusting for neighborhood spillover.
+
+# Conclusion
+
+This study demonstrates that hypertension mortality in Washington, D.C., is deeply intertwined with structural inequities, particularly poverty, unemployment, and racial segregation. The significant spatial clustering of HTP underscores the need for place-based public health strategies that address both socioeconomic and environmental determinants. By integrating traditional regression, spatial modeling, and PCA-based composite indices, we provide compelling evidence that:
+Socioeconomic vulnerabilities are spatially patterned.
+A single composite index can effectively summarize cumulative disadvantage.
+Poverty, Unemployment and Race remains a significant structural axis through which health disparities are organized.
+Policymakers must move beyond individual behavioral interventions and implement systemic reforms to reduce disparities in cardiovascular health outcomes.
+
+
+
+# Recommendation
+
+#### Policy and Economic Interventions
+
+Poverty Alleviation which expand affordable housing programs, living wage policies, and tax credits for low-income families to reduce economic strain.
+Employment Stability strategies which invest in job training and local hiring initiatives in high-risk neighborhoods to mitigate unemployment-related health risks.
+
+#### Healthcare System Strengthening
+
+Community-Based Care which deploys community health workers in high hypertension prevalent areas to improve hypertension screening and management.A strategy that increases access to blood pressure monitoring and medication adherence support in under-served communities.
+
+#### Leverage PCA Models for Equity Planning
+
+CRE provides a data-driven, replicable method to identify at-risk areas without relying on potentially stigmatizing single-variable measures.
+
+#### Research and Monitoring
+
+Dis-aggregated Data Collection which enhance surveillance with finer racial/ethnic and socioeconomic data to identify at-risk subgroups.
+Longitudinal Studies which track the long-term health impacts of policy interventions to assess effectiveness.
+By addressing both structural and spatial determinants, policymakers can reduce hypertension disparities and advance health equity in urban settings.
+
+#### Usage of Segregation metrics as complementary tools
+
+Further work should include racial dissimilarity indices to link CRE with spatial segregation, offering a deeper multidimensional understanding of how race and space interact.
+
+# References
+
+Akinwande, M. , Dikko, H. and Samson, A. (2015) Variance Inflation Factor: As a Condition for the Inclusion of Suppressor Variable(s) in Regression Analysis. Open Journal of Statistics, 5, 754-767. doi: 10.4236/ojs.2015.57075.
+Bailey, S. R., O'Malley, J. P., Gold, R., Heintzman, J., & Likumahuwa, S. (2017). Receipt of diabetes preventive services differs by insurance status at visit. Health Affairs, 36(2), 320–327. https://doi.org/10.1377/hlthaff.2016.1026
+Braveman, P., & Gottlieb, L. (2014). The social determinants of health: It’s time to consider the causes of the causes. Public Health Reports, 129(1_suppl2), 19–31. https://doi.org/10.1177/00333549141291S206
+CDC. (2020). Hypertension in adults aged 65 and over: United States, 2011–2014. National Center for Health Statistics.
+Couch, K. A., Jolly, N. A., & Placzek, D. W. (2013). Earnings losses of displaced workers revisited. American Economic Review, 101(4), 1397–1420.
+Egan, B. M., Zhao, Y., & Axon, R. N. (2014). US trends in prevalence, awareness, treatment, and control of hypertension, 1988–2008. JAMA, 303(20), 2043–2050. https://doi.org/10.1001/jama.2010.650
+Galama, T. J., & Kapteyn, A. (2011). Grossman’s missing health threshold. Journal of Health Economics, 30(5), 1044–1056. https://doi.org/10.1016/j.jhealeco.2011.08.005
+Glied, S., & Lleras-Muney, A. (2008). Technological innovation and health disparities. In J. House, R. Schoeni, G. Kaplan, & H. Pollack (Eds.), Making Americans healthier: Social and economic policy as health policy (pp. 147–181). Russell Sage Foundation.
+Grossman, M. (1972). On the concept of health capital and the demand for health. Journal of Political Economy, 80(2), 223–255. https://doi.org/10.1086/259880
+Marmot, M., Friel, S., Bell, R., Houweling, T. A., Taylor, S., & Commission on Social Determinants of Health. (2008). Closing the gap in a generation: Health equity through action on the social determinants of health. The Lancet, 372(9650), 1661–1669. https://doi.org/10.1016/S0140-6736(08)61690-6
+McWilliams, J. M. (2009). Health consequences of uninsurance among adults in the United States: Recent evidence and implications. Milbank Quarterly, 87(2), 443–494. https://doi.org/10.1111/j.1468-0009.2009.00564.x
+Navarro, V. (2009). What we mean by social determinants of health. International Journal of Health Services, 39(3), 423–441. https://doi.org/10.2190/HS.39.3.a
+Reeves, A., McKee, M., & Stuckler, D. (2014). Economic suicides in the Great Recession in Europe and North America. British Journal of Psychiatry, 205(3), 246–247. https://doi.org/10.1192/bjp.bp.114.144766
+Solar, O., & Irwin, A. (2010). A conceptual framework for action on the social determinants of health. WHO Document Production Services.
+Thorpe, R. J., Bowie, J. V., Wilson-Frederick, S. M., Coa, K. I., & LaVeist, T. A. (2015). Association between race, place, and preventive health screenings among men: Findings from the Exploring Health Disparities in Integrated Communities Study. American Journal of Men’s Health, 9(3), 220–227.
+Woolf, S. H., Chapman, D. A., Buchanich, J. M., Bobby, K. J., Zimmerman, E. B., & Blackburn, S. M. (2019). Changes in midlife death rates across racial and ethnic groups in the United States: Systematic analysis of vital statistics. BMJ, 365, l4257. https://doi.org/10.1136/bmj.l4257
+
