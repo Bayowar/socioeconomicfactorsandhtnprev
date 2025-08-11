@@ -1,0 +1,1605 @@
+---
+title: "Hypertension_study_Technical_file"
+author: "Bayowa Onabajo, Nathan Alexander"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(here)
+here::i_am("Hypertension_study_Technical_file.Rmd")
+library(knitr)
+```
+
+
+# Data Collation and Exploration
+#### Hypertension Data(CDC)
+```{r}
+#Install 
+#install.packages(c("dLagM", "urca", "lmtest", "car", "ggplot2", "tseries"))
+#install.packages("tsbox")
+#install.packages("ARDL")
+#install.packages(c("tidycensus", "tidyverse", "sf"))
+
+
+library(dLagM)
+library(urca)
+library(lmtest)
+library(car)
+library(ggplot2)
+library(tseries)
+library(tidyverse)
+library(tsbox)
+library(ARDL)
+library(tidycensus)
+library(sf)
+library(tidyverse)
+library(readr)
+
+```
+
+#### ACS Socioeconomic Variables
+```{r}
+library(tidycensus)
+library(dplyr)
+library(purrr)
+
+# Census API key
+api_key <- Sys.getenv("CENSUS_API_KEY")
+census_api_key(api_key, overwrite = TRUE)
+
+variables <- c(
+  poverty_rate = "B17001_002",
+  unemployment_rate = "B23025_005",
+  no_health_insurance = "B27010_033",
+  education_less_than_hs = "B15003_002",
+  median_age = "B01002_001",
+  black_population = "B02001_003",
+  white_population = "B02001_002",
+  american_indian_alaska_native_alone = "B02001_004",
+  asian_alone = "B02001_005",
+  native_hawaiian_other_pacific_islander_alone = "B02001_006",
+  
+  male_65_69 = "B01001_017",
+  male_70_74 = "B01001_018",
+  male_75_79 = "B01001_019",
+  male_80_84 = "B01001_020",
+  male_85plus = "B01001_021",
+  female_65_69 = "B01001_041",
+  female_70_74 = "B01001_042",
+  female_75_79 = "B01001_043",
+  female_80_84 = "B01001_044",
+  female_85plus = "B01001_045"
+)
+
+years <- 2013:2024
+
+get_acs_year <- function(year) {
+  tryCatch({
+    data <- get_acs(
+      geography = "tract",
+      year = year,
+      state = "11",
+      survey = "acs5",
+      variables = variables,
+      summary_var = "B01001_001", 
+      output = "wide",
+      geometry = FALSE
+    )
+    data$year <- year
+    return(data)
+  }, error = function(e) {
+    message(paste("Error getting data for year", year, ":", e$message))
+    return(NULL)
+  })
+}
+
+# Get data and calculate rates
+dc_ACS_all_years <- map_df(years, possibly(get_acs_year, otherwise = NULL)) %>%
+  mutate(
+    #  Calculate total 65+
+    total_65plus = male_65_69E + male_70_74E + male_75_79E + male_80_84E + male_85plusE +
+                   female_65_69E + female_70_74E + female_75_79E + female_80_84E + female_85plusE,
+    
+    # Calc rates(B01001_001E)
+    # Basic rates
+    poverty_rate_pct = (poverty_rateE / summary_est) * 100,
+    unemployment_rate_pct = (unemployment_rateE / summary_est) * 100,
+    no_health_insurance_pct = (no_health_insuranceE / summary_est) * 100,
+    education_less_than_hs_pct = (education_less_than_hsE / summary_est) * 100,
+    
+    # race percentages
+    black_population_pct = (black_populationE / summary_est) * 100,
+    white_population_pct = (white_populationE / summary_est) * 100,
+    american_indian_pct = (american_indian_alaska_native_aloneE / summary_est) * 100,
+    asian_pct = (asian_aloneE / summary_est) * 100,
+    pacific_islander_pct = (native_hawaiian_other_pacific_islander_aloneE / summary_est) * 100,
+    
+    # Age 65+ percentage
+    pct_65plus = (total_65plus / summary_est) * 100,
+    
+    # race percentages among 65+ population
+    black_65plus_pct = ifelse(total_65plus > 0, (black_populationE / total_65plus) * 100, NA),
+    white_65plus_pct = ifelse(total_65plus > 0, (white_populationE / total_65plus) * 100, NA),
+    asian_65plus_pct = ifelse(total_65plus > 0, (asian_aloneE / total_65plus) * 100, NA),
+  )
+
+# View results
+glimpse(dc_ACS_all_years)
+View(dc_ACS_all_years)
+
+# write.csv(dc_ACS_all_years, "dc_acs_rates_2013_2024.csv", row.names = FALSE)
+```
+
+
+#### Hypertension Data BRFSS(CDC)
+
+```{r}
+# Read the CSV file
+brfss_data <- read_csv("/Users/bayowaonabajo/Downloads/Behavioral_Risk_Factor_Surveillance_System__BRFSS__Age-Adjusted_Prevalence_Data__2011_to_present_.csv")
+
+dc_hypertension <- brfss_data %>%
+  filter(Locationdesc == "District of Columbia",
+         Year >= 2013 & Year <= 2024,
+         Topic == "High Blood Pressure",
+         Question == "Adults who have been told they have high blood pressure (variable calculated from one or more BRFSS questions)") %>%
+  select(Year, Locationdesc, Response, Data_value,Sample_Size,Data_value_unit,Data_value_type,DataSource, Confidence_limit_Low, Confidence_limit_High, Geolocation)
+
+# View the results
+View(dc_hypertension)
+```
+
+
+```{r}
+library(tidyverse)
+library(readr)
+
+# Read Csv file
+HtnPrevalence_datadc <- read_csv("/Users/bayowaonabajo/Downloads/indicator_data_download_20250703.csv", col_types = cols(
+    `Indicator Name` = col_character(),
+    `What Is This Indicator` = col_character(),
+    `Location Type` = col_character(),
+    `Location` = col_character(),
+    `Indicator Rate Value` = col_double(),
+    `Indicator Rate Value Units` = col_character(),
+    `Rate Lower Confidence Interval` = col_double(),
+    `Rate Upper Confidence Interval` = col_double(),
+    `Indicator Count Value` = col_skip(),  
+    `Indicator Count Value Units` = col_skip(),  
+    `Count Lower Confidence Interval` = col_skip(),  
+    `Count Upper Confidence Interval` = col_skip(),  
+    `Indicator Value Unstable` = col_character(),
+    `Period of Measure` = col_integer(),
+    `Data Source` = col_character(),
+    `Technical Note` = col_character(),
+    `Breakout Title` = col_skip(),  
+    `Breakout Category` = col_skip(),  
+    `Breakout Subcategory` = col_skip(),  
+    `Breakout Rate Value` = col_skip(),  
+    `Breakout Rate Value Units` = col_skip(),  
+    `Breakout Rate Lower Confidence Interval` = col_skip(),  
+    `Breakout Rate Upper Confidence Interval` = col_skip(),  
+    `Breakout Count Value` = col_skip(),  
+    `Breakout Count Value Units` = col_skip(),  
+    `Breakout Count Lower Confidence Interval` = col_skip(),  
+    `Breakout Count Upper Confidence Interval` = col_skip(),  
+    `Breakout Unstable` = col_skip(), 
+    `Breakout Footer` = col_skip()  
+  )
+)
+
+View(HtnPrevalence_datadc) 
+```
+
+#### Hypertension Data by Census Tracts
+```{r}
+# Clean the necessary columns
+htn_tract_clean <- HtnPrevalence_datadc %>%
+  filter(`Indicator Name` == "High Blood Pressure Prevalence",
+         `Location Type` == "Census Tract") %>%
+  rename(
+    GEOID = Location,
+    year = `Period of Measure`,
+    HTP = `Indicator Rate Value`
+  ) %>%
+  mutate(
+    GEOID = as.character(GEOID),
+    year = as.integer(year)
+  ) %>%
+  select(GEOID, year, HTP)
+
+# Check structure
+glimpse(htn_tract_clean)
+```
+
+##### Data Cleaning
+```{r}
+acs_summary <- dc_ACS_all_years %>%
+  group_by(year) %>%
+  summarise(
+    POV = mean(poverty_rate_pct, na.rm = TRUE),
+    UER = mean(unemployment_rate_pct, na.rm = TRUE),
+    LIN = mean(no_health_insurance_pct, na.rm = TRUE),
+    AGE65 = mean(pct_65plus, na.rm = TRUE),
+    ASIAN = mean(asian_pct, na.rm = TRUE),
+    PACIFIC = mean(pacific_islander_pct, na.rm = TRUE),
+    AMERICANINDIAN = mean(american_indian_pct, na.rm = TRUE),
+    BLACK = mean(black_population_pct, na.rm = TRUE),
+    WHITE = mean(white_population_pct, na.rm = TRUE)
+  )
+```
+
+#### Hypertension Data Interpolation for Missing Years
+```{r}
+library(tidyr)
+library(zoo)
+
+# Interpolate, Create full panel
+htn_tract_full <- htn_tract_clean %>%
+  complete(GEOID, year = 2013:2024) %>%
+  group_by(GEOID) %>%
+  arrange(year) %>%
+  mutate(HTP_interp = na.approx(HTP, year, rule = 2)) %>%
+  ungroup()
+
+```
+
+#### Merge and Clean Dataset
+```{r}
+
+dc_ACS_all_years <- dc_ACS_all_years %>%
+  mutate(GEOID = as.character(GEOID))
+
+df1  <- dc_ACS_all_years %>%
+  left_join(htn_tract_full, by = c("GEOID", "year"))
+
+View(df1)
+```
+
+
+```{r}
+# Clean table for analysis
+df2 <- df1 %>%
+  select(
+    GEOID,
+    NAME,
+    year,
+    HTP_interp,           # Interpolated hypertension prevalence
+    poverty_rate_pct,     # POV
+    unemployment_rate_pct, # UER
+    no_health_insurance_pct, # LIN
+    pct_65plus,           # AGE65
+    asian_pct,            # ASIAN
+    pacific_islander_pct, # PACIFIC
+    american_indian_pct,  # AMERICANINDIAN
+    black_population_pct, # BLACK
+    white_population_pct  # WHITE
+  ) %>%
+  rename(
+    Year = year,
+    HTP = HTP_interp,
+    POV = poverty_rate_pct,
+    UER = unemployment_rate_pct,
+    LIN = no_health_insurance_pct,
+    AGE65 = pct_65plus,
+    ASIAN = asian_pct,
+    PACIFIC = pacific_islander_pct,
+    AMERICANINDIAN = american_indian_pct,
+    BLACK = black_population_pct,
+    WHITE = white_population_pct
+  )
+View(df2)
+
+```
+
+#### Final Dataset
+```{r}
+library(dplyr)
+
+# Check column types first
+str(df2)
+
+# Select only numeric columns for missing analysis
+numeric_cols <- df2 %>% 
+  select(where(is.numeric))  # Only numeric 
+
+#  Calculate missing data properly
+total_rows <- nrow(numeric_cols)
+missing_counts <- colSums(is.na(numeric_cols))
+missing_percentages <- (missing_counts / total_rows) * 100
+
+#  Print results sorted by most missing
+missing_percentages %>% 
+  sort(decreasing = TRUE) %>% 
+  print()
+
+# Remove rows with NAs (only from numeric columns)
+df <- df2 %>% 
+  filter(complete.cases(numeric_cols))
+
+# Verify 
+glimpse(df)
+View(df)
+#write.csv(df, "final_dataset_DC_htn.csv", row.names = FALSE)
+```
+
+
+
+#### Timeseries Plot of Variables 
+```{r}
+
+library(dplyr)
+library(plotly)
+
+# Calculate yearly averages
+df_yearly <- df %>%
+  group_by(Year) %>%
+  summarise(
+    HTP = mean(HTP, na.rm = TRUE),
+    POV = mean(POV, na.rm = TRUE),
+    UER = mean(UER, na.rm = TRUE),
+    LIN = mean(LIN, na.rm = TRUE),
+    AGE65 = mean(AGE65, na.rm = TRUE)
+  )
+
+#  Create AND STORE interactive plot
+interactive_plot <- plot_ly(df_yearly, x = ~Year) %>%
+  add_lines(y = ~HTP, name = "Hypertension (%)", line = list(color = "red")) %>%
+  add_lines(y = ~POV, name = "Poverty (%)", line = list(color = "blue")) %>%
+  add_lines(y = ~UER, name = "Unemployment (%)", line = list(color = "green")) %>%
+  add_lines(y = ~LIN, name = "No Insurance (%)", line = list(color = "purple")) %>%
+  add_lines(y = ~AGE65, name = "Age 65+ (%)", line = list(color = "orange")) %>%
+  layout(
+    title = "DC Yearly Averages (2013-2023)",
+    xaxis = list(title = "Year", dtick = 1),
+    yaxis = list(title = "Percentage (%)"),
+    hovermode = "x unified"
+  )
+
+# Now you can display it
+interactive_plot
+```
+
+
+
+
+# Statistical Analysis
+
+### Descriptive Statistics
+```{r}
+summary(df[,-1])
+apply(df[,-1], 2, sd)
+```
+Average age-adjusted hypertension prevalence (HTP) across D.C. census tracts in 2013 was 26.4%, with values ranging from 0.0% to 44.4%.
+
+
+```{r}
+library(tseries)
+
+#  Select only numeric columns
+numeric_cols <- df %>% select(where(is.numeric))
+
+# Calculate statistics
+results <- data.frame(
+  Mean = sapply(numeric_cols, mean, na.rm = TRUE),
+  SD = sapply(numeric_cols, sd, na.rm = TRUE),
+  Sum_Sq_Dev = sapply(numeric_cols, function(x) sum((x - mean(x, na.rm = TRUE))^2, na.rm = TRUE)),
+  JB_p_value = sapply(numeric_cols, function(x) {
+    if (length(na.omit(x)) >= 4) {  # Jarque-Bera requires min 4 observations
+      jarque.bera.test(na.omit(x))$p.value 
+    } else {
+      NA
+    }
+  })
+)
+
+# 3. Display results
+round(results, 4)
+
+```
+
+
+#### Regression
+```{r}
+# Simple linear regressions
+lm_black <- lm( HTP ~ BLACK, data = df)
+summary(lm_black)
+
+lm_white <- lm(HTP ~ WHITE, data = df)
+summary(lm_white)
+
+lm_ai_an <- lm(HTP ~ AMERICANINDIAN, data = df)
+summary(lm_ai_an)
+
+lm_asian <- lm(HTP ~ ASIAN, data = df)
+summary(lm_asian)
+
+lm_pacific <- lm(HTP ~ PACIFIC, data = df)
+summary(lm_pacific)
+
+```
+
+
+#### Research Question 1,2,3 and 4?
+```{r}
+# linear Regression
+library(lmtest)
+library(car)
+
+# Ensure variables are numeric and complete cases
+model_data <- na.omit(df[, c("HTP", "POV", "UER", "LIN", "AGE65")])
+model <- lm(HTP ~ POV + UER + LIN + AGE65, data = model_data)
+summary(model)
+
+# Diagnostics
+par(mfrow = c(2, 2))
+plot(model)  
+dwtest(model)  # Durbin-Watson test
+```
+The baseline linear model (HTP ~ POV + UER + LIN + AGE65) showed: Poverty is the most significant predictor (β = 0.45, p < 0.001).Unemployment and AGE65 are also statistically significant (p < 0.05).
+
+
+###  Correlation Matrix
+```{r}
+numeric_df <- df[, -1] %>% select_if(is.numeric)
+cor(numeric_df)
+```
+
+
+```{r}
+str(df)
+
+numeric_df <- df %>% select(-1) %>% select_if(is.numeric)
+
+corrplot::corrplot(cor(numeric_df))
+```
+
+
+```{r}
+str(df %>% select(HTP, BLACK, WHITE, AMERICANINDIAN, ASIAN, PACIFIC))
+
+cor_data <- df %>%
+  select(
+    HTP,
+    BLACK,
+    WHITE,
+    AMERICANINDIAN,
+    ASIAN,
+    PACIFIC  
+  ) %>%
+  mutate(across(everything(), ~ as.numeric(as.character(.)))) %>%  
+  filter(complete.cases(.))  # Remove NAs
+
+#Verify all columns are numeric
+stopifnot(all(sapply(cor_data, is.numeric)))  
+
+#Correlation matrix
+cor_matrix <- cor(cor_data, use = "complete.obs")
+
+#View results with significance stars
+print(cor_matrix)
+```
+
+#### Multicollinearity
+###### Variance inflation factor (VIF)
+Testing collinearity in variables with a value above 5 suggesting collinearity with poor outcomes on the model and value of 1 suggesting no collinearity.
+Variance Inflation Factors are used to assess the contribution of each predictor variable to the model and to identify those that are collinear. (Akinwande et al. 2015)"
+```{r}
+car::vif(model)  # Variance Inflation Factor
+```
+
+
+#### Research Question 1,2,3 and 4?
+#### ARDL Model Estimation
+```{r}
+library(ARDL)
+library(dplyr)
+
+# Prepare data,ensure numeric and complete cases
+ardl_data <- na.omit(df[, c("HTP", "POV", "UER", "AGE65")]) %>% 
+  mutate(across(everything(), as.numeric))
+
+ardl_model <- ardl(HTP ~ POV + UER + AGE65, data = ardl_data,
+                   order = c(1, 0, 1, 0))
+summary(ardl_model)
+```
+
+An ARDL model was estimated based on AIC.
+Long-run coefficients, POV and UER remained significant.
+
+
+### Research Question 1,2,3,4?
+### Cointegration (Bounds) Test
+```{r}
+library(ARDL)
+
+# 1. Estimate ARDL model
+ardl_model <- ardl(HTP ~ POV + UER + AGE65, data = df, order = c(1, 0, 1, 0))
+
+# 2. Bounds test for cointegration
+bounds_test <- bounds_f_test(ardl_model, case = 3)
+print(bounds_test)
+
+### Long Run and Short Run Estimates
+
+library(ARDL)
+
+ecm_model <- uecm(ardl_model)
+summary(ecm_model)
+
+coefs <- coefficients(ardl_model)
+print(coefs)
+
+```
+
+
+```{r}
+library(ARDL)
+library(dplyr)
+
+# Include race variables 
+ardl_data1 <- na.omit(df[, c("HTP", "POV", "UER", "AGE65", "BLACK", "WHITE", "AMERICANINDIAN", "ASIAN", "PACIFIC" )]) %>%
+  mutate(across(everything(), as.numeric))
+
+# Estimate ARDL model with race covariates
+ardl_model1 <- ardl(HTP ~ POV + UER + AGE65 + BLACK + WHITE + AMERICANINDIAN + ASIAN + PACIFIC,
+                   data = ardl_data1,
+                   order = c(1, 0, 1, 0, 0, 0, 0, 0, 0))
+
+# Summarize results
+summary(ardl_model1)
+
+
+```
+
+
+To assess the influence of racial composition, we extended the ARDL model by including the percentage of residents by race as additional covariates. Lag structures were determined using AIC, and both race variables were included contemporaneously given their theoretical impact on structural health disparities.
+
+
+```{r}
+#Conversion to time-series obj
+df_ts <- ts(df, start = 2013, frequency = 1)
+
+# stationarity
+adf.test(df$HTP)  
+```
+
+
+
+###  Augmented Dickey-Fuller Unit Root Test
+```{r}
+library(tseries)
+
+# Safely identify numeric columns (excluding first column)
+numeric_cols <- which(sapply(df, is.numeric))
+if(length(numeric_cols) > 1) {
+  numeric_cols <- numeric_cols[-1]  # Remove first column if it's numeric
+  adf_results <- lapply(df[, numeric_cols, drop = FALSE], function(x) {
+    x_clean <- na.omit(as.numeric(x))
+    if(length(x_clean) > 8) adf.test(x_clean) else NULL  # ADF requires min 8 obs
+  })
+  adf_results <- Filter(Negate(is.null), adf_results)
+} else {
+  warning("Insufficient numeric columns for ADF testing")
+  adf_results <- list()
+}
+adf_results
+
+
+```
+
+```{r}
+library(tibble)
+
+adf_results <- tribble(
+  ~Variable, ~ADF_Statistic, ~P_Value, ~Conclusion,
+  "HTP", -9.749, "< 0.01", "Stationary",
+  "POV", -10.734, "< 0.01", "Stationary",
+  "UER", -9.3261, "< 0.01", "Stationary",
+  "LIN", -11.609, "< 0.01", "Stationary",
+  "AGE65", -10.972, "< 0.01", "Stationary",
+  "ASIAN", -9.1452, "< 0.01", "Stationary",
+  "PACIFIC", -11.956, "< 0.01", "Stationary",
+  "AMERICANINDIAN", -12.086, "< 0.01", "Stationary",
+  "BLACK", -9.6922, "< 0.01", "Stationary",
+  "WHITE", -10.328, "< 0.01", "Stationary"
+)
+
+knitr::kable(adf_results, caption = "ADF Test Results for Variables")
+
+```
+
+All variables were tested for stationarity using the Augmented Dickey-Fuller (ADF) test. As shown in Table above, all were stationary at level (I(0)), allowing for ARDL modeling without differencing.
+
+
+### Research Question 1 and 2?
+#### Normality
+```{r}
+library(tseries)
+
+# Estimate
+ardl_model <- ardl(HTP ~ POV + UER, data = df, order = c(1, 0, 1))
+
+# test normality
+residuals <- residuals(ardl_model)
+jarque.bera.test(residuals)
+```
+
+### Research Question 1 and 2?
+#### Heteroskedasticity
+```{r}
+library(lmtest) 
+
+# Est
+ardl_model <- ardl(HTP ~ POV + UER, data = df, order = c(1, 0, 1))
+
+# Breusch-Pagan test 
+bptest(ardl_model)  
+```
+
+#### Serial Correlation
+```{r}
+library(lmtest)
+bgtest(ardl_model, order = 2)
+```
+
+#### Model Specification (RESET)
+```{r}
+
+resettest(ardl_model)
+```
+
+
+#### Research Question 1, 2, 3 and 4?
+### Residual Plot
+```{r}
+plot(residuals(ardl_model), type="o", main="Residuals of ARDL Model", col="blue")
+abline(h=0, col="red", lty=2)
+```
+
+### Composite Resilience or Vulnerability Index (CRE) with Principal Component Analysis
+
+Independent variables are POV, UER, which are CRE factors
+Dependent variable is HTP
+
+#### Composite Resilience factors on Hypertension
+
+$$
+HTP ~ POV, HTP ~ BLACK
+$$
+
+We address the multidimensionality of socioeconomic vulnerability, we constructed a composite index using Principal Component Analysis (PCA). The PCA model included four standardized predictors: poverty rate (POV), unemployment rate (UER), lack of health insurance (LIN), and percent of the population aged 65 or older (AGE65). These variables capture economic hardship, employment instability, healthcare exclusion, and aging vulnerability.
+Variable loadings indicated that [POV and UER contributed most, followed by LIN and AGE65]. This component was interpreted as a Composite Resilience Estimate (CRE), where higher values denote greater structural vulnerability. The CRE was used as an explanatory variable in regression models predicting hypertension prevalence (HTP).
+
+```{r}
+# PCA to summarize structural resilience/vulnerability
+vars <- c("POV", "UER", "LIN", "AGE65")
+pca <- prcomp(df[, vars], scale. = TRUE)
+#summarize
+summary(pca)
+pca$rotation
+```
+
+#### PCA Results
+```{r}
+# Principal component as CRE
+df$CRE_pca <- as.numeric(pca$x[, 1])
+
+# Regress HTP on the CRE
+model_cre <- lm(HTP ~ CRE_pca, data = df)
+summary(model_cre)
+```
+
+
+```{r}
+#install.packages("factoextra")
+#install.packages("broom")
+library(factoextra)
+library(broom)
+library(tidyverse)
+library(kableExtra)
+
+
+# PCA for Composite Resilience Estimate
+cre_vars <- c("POV", "UER", "LIN", "AGE65")
+
+# Perform PCA
+pca <- prcomp(df[, c("POV", "UER", "LIN", "AGE65")], scale. = TRUE)
+
+# Scree Plot
+scree_plot <- fviz_eig(pca, addlabels = TRUE)
+
+# Loadings Plot 
+loadings_data <- as.data.frame(pca$rotation[, 1, drop = FALSE]) 
+loadings_plot <- 
+  ggplot(loadings_data, aes(x = reorder(rownames(loadings_data), -PC1), y = PC1, 
+                           fill = rownames(loadings_data))) +
+  geom_col() +
+  labs(x = "", y = "PC1 Loadings") +
+  theme_minimal()
+
+# Create CRE Index
+df$CRE_pca <- -pca$x[, 1]  
+
+# Plot HTP vs. CRE
+cre_htp_plot <- 
+  ggplot(df, aes(x = CRE_pca, y = HTP)) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "lm", color = "blue") +
+  labs(title = "HTP vs. CRE", x = "Composite Resilience (Higher = More Vulnerable)", y = "Hypertension Prevalence")
+
+# Display all plots
+gridExtra::grid.arrange(scree_plot, loadings_plot, cre_htp_plot, ncol = 2)
+
+# Regression model
+cre_model <- lm(HTP ~ CRE_pca, data = df)
+broom::tidy(cre_model) %>% kable(digits = 3)
+```
+
+
+
+# Mapping
+```{r}
+# Get spatial data for DC tracts
+library(tidycensus)
+dc_tracts <- get_acs(
+  geography = "tract",
+  state = "11",
+  variables = "B01001_001",
+  year = 2023,
+  geometry = TRUE,
+  output = "wide"
+)
+
+# Create df_map by joining your analysis data with spatial data
+df_map <- df2 %>% 
+  filter(Year == 2023) %>% 
+  left_join(dc_tracts %>% select(GEOID, geometry), by = "GEOID") %>% 
+  st_as_sf()
+```
+
+
+
+```{r}
+library(sf)
+library(ggplot2)
+
+# Ensure df_map exists and has geometry
+if(exists("df_map") && "sf" %in% class(df_map)) {
+  choropleth_imputed <- df_map %>%
+    st_make_valid() %>%
+    mutate(
+      HTP = coalesce(as.numeric(HTP), mean(as.numeric(HTP), na.rm = TRUE)),
+      POV = coalesce(as.numeric(POV), mean(as.numeric(POV), na.rm = TRUE)),
+      AGE65 = coalesce(as.numeric(AGE65), mean(as.numeric(AGE65), na.rm = TRUE)),
+      UER = coalesce(as.numeric(UER), mean(as.numeric(UER), na.rm = TRUE)),
+      LIN = coalesce(as.numeric(LIN), mean(as.numeric(LIN), na.rm = TRUE))
+    ) %>%
+    filter(!st_is_empty(.))
+  
+  # Get unified scale limits
+  value_range <- range(c(choropleth_imputed$HTP, choropleth_imputed$POV, 
+                        choropleth_imputed$AGE65,choropleth_imputed$UER,choropleth_imputed$LIN), na.rm = TRUE)
+  
+  # Plotting function
+  create_map <- function(data, var, title) {
+    ggplot(data) +
+      geom_sf(aes(fill = {{ var }}), color = "black", size = 0.1) +
+      scale_fill_viridis_c(
+        name = "Rate (%)",
+        limits = value_range,
+        option = "plasma",
+        na.value = "gray"
+      ) +
+      labs(title = title) +
+      theme_void()
+  }
+  
+  # Generate maps
+  map_hypertension <- create_map(choropleth_imputed, HTP, "Hypertension (2023)")
+  map_poverty <- create_map(choropleth_imputed, POV, "Poverty (2023)")
+  map_age65 <- create_map(choropleth_imputed, AGE65, "Age 65+ (2023)")
+  map_unemployed <- create_map(choropleth_imputed, UER, "Unemployed (2023)")
+  map_nohealthinsurance <- create_map(choropleth_imputed, LIN, "No Health Insurance (2023)")
+  
+  # Arrange
+  gridExtra::grid.arrange(map_hypertension, map_poverty, map_age65,map_unemployed,map_nohealthinsurance, ncol = 5)
+} else {
+  warning("Spatial data not available - skipping mapping section")
+}
+```
+
+
+
+# Spatial Analysis
+```{r}
+#install.packages("spData")
+library(spdep)
+library(sf)
+library(tmap)
+
+# Prepare spatial data
+df_sf <- st_as_sf(df_map) %>% 
+  st_transform(26918)  # UTM Zone 18N for DC
+
+# Create neighbors list (queen contiguity)
+nb <- poly2nb(df_sf, queen = TRUE)
+
+# imputation with NA safety
+df_sf$HTP_imputed <- df_sf$HTP  # Initialize
+
+# Get indices of NA values
+na_indices <- which(is.na(df_sf$HTP))
+
+for (i in na_indices) {
+  neighbor_values <- df_sf$HTP[nb[[i]]]  # Get neighbor values
+  valid_neighbors <- neighbor_values[!is.na(neighbor_values)]
+  
+  if (length(valid_neighbors) > 0) {
+    df_sf$HTP_imputed[i] <- mean(valid_neighbors)
+  }
+}
+
+# Prep Moran's test 
+valid_tracts <- !is.na(df_sf$HTP_imputed)
+df_sf_valid <- df_sf[valid_tracts, ]
+
+# subset weights matrix
+nb_valid <- subset.nb(nb, valid_tracts)
+weights_valid <- nb2listw(nb_valid, style = "W")
+
+# Moran's test
+if (sum(valid_tracts) > 1) {  # Need at least 2 observations
+  moran_result <- moran.test(df_sf_valid$HTP_imputed, weights_valid)
+  print(moran_result)
+} else {
+  warning("Insufficient non-NA values for Moran's test")
+}
+
+# Visualize with NA handling
+tm_shape(df_sf) +
+  tm_fill("HTP_imputed",
+          palette = "Reds",
+          style = "quantile",
+          title = "Hypertension (%)",
+          textNA = "No Data (Insufficient Neighbor Estimates)",
+          colorNA = "lightgray") +
+  tm_borders(col = "white", lwd = 0.3) +
+  tm_layout(main.title = "Spatially Imputed Hypertension Prevalence",
+            legend.outside = TRUE)
+
+
+```
+
+
+```{r}
+library(spdep)
+library(spatialreg)
+
+#  Ensure valid geometries
+df_sf_valid <- df_sf %>%
+  st_make_valid() %>%
+  filter(complete.cases(HTP, POV, UER))
+
+#  Create neighbors with zero policy
+nb <- poly2nb(df_sf_valid, queen = TRUE)
+weights <- nb2listw(nb, style = "W", zero.policy = TRUE)
+
+#  Check neighbor counts
+print(table(card(nb)))  # Shows how many neighbors each tract has
+
+#  Run model with zero.policy
+spatial_lag <- lagsarlm(
+  HTP ~ POV + UER,
+  data = df_sf_valid,
+  listw = weights,
+  method = "eigen",
+  zero.policy = TRUE
+)
+
+summary(spatial_lag)
+
+
+```
+
+
+```{r}
+tm_shape(df_sf) +
+  tm_fill("POV", palette = "Blues", style = "quantile", title = "Poverty Rate (%)") +
+  tm_borders(lwd = 0.5, col = "gray") +
+  tm_layout(main.title = "Poverty Rate by Census Tract",
+            legend.outside = TRUE)
+
+```
+
+```{r}
+# Spatial regression significance testing
+library(spdep)
+library(spatialreg)
+
+# Clean data 
+df_sf_clean <- df_sf %>%
+  st_make_valid() %>%
+  filter(!is.na(HTP), !is.na(POV), !is.na(UER))
+
+# Recompute neighbors and weights
+nb <- poly2nb(df_sf_clean, queen = TRUE)  
+weights <- nb2listw(nb, style = "W", zero.policy = TRUE)  # Allow isolated tracts
+
+# Verify dimensions
+cat(
+  "Data rows:", nrow(df_sf_clean), "\n",
+  "Weights length:", length(weights$neighbours), "\n"
+)
+
+# Run regression
+spatial_lag <- lagsarlm(
+  HTP ~ POV + UER,
+  data = df_sf_clean,
+  listw = weights,
+  zero.policy = TRUE  # Important if some tracts have no neighbors
+)
+summary(spatial_lag)
+```
+
+
+```{r}
+
+
+# Load Packages 
+library(spdep)
+library(spatialreg)
+library(sf)
+library(tmap)
+library(tidyverse)
+library(modelsummary)
+
+# Data Preparation 
+df_sf <- df_map %>% 
+  st_as_sf() %>% 
+  st_transform(26918) %>%  # UTM Zone 18N for DC
+  st_make_valid() %>%
+  mutate(across(c(HTP, POV, UER, AGE65), as.numeric)) %>%
+  mutate(row_id = 1:n())
+
+# Enhanced Spatial Imputation 
+nb <- poly2nb(df_sf, queen = TRUE, snap = 1e-3)  # Increased snap tolerance
+
+df_sf <- df_sf %>%
+  mutate(
+    HTP_imputed = ifelse(is.na(HTP),
+                        sapply(nb, function(neighbors) {
+                          if(length(neighbors) == 0) return(NA)
+                          mean(df_sf$HTP[neighbors], na.rm = TRUE)
+                        }),
+                        HTP),
+    HTP_imputed = coalesce(HTP_imputed, mean(HTP, na.rm = TRUE))
+  )
+
+# Hotspot Analysis 
+valid_tracts <- !is.na(df_sf$HTP_imputed)
+df_sf_valid <- df_sf[valid_tracts, ]
+nb_valid <- subset.nb(nb, valid_tracts)
+weights_valid <- nb2listw(nb_valid, style = "W")
+
+if(sum(valid_tracts) > 1) {
+  # Local Moran's I
+  local_moran <- localmoran(df_sf_valid$HTP_imputed, weights_valid)
+  df_sf_valid <- df_sf_valid %>%
+    mutate(
+      local_moran_i = local_moran[, "Ii"],
+      hotspot_pval = local_moran[, "Pr(z != E(Ii))"],
+      hotspot_type = case_when(
+        local_moran_i > 0 & hotspot_pval < 0.05 ~ "High-High",
+        local_moran_i < 0 & hotspot_pval < 0.05 ~ "Low-Low",
+        TRUE ~ "Not Significant"
+      )
+    )
+  
+  # Join hotspot data back to full dataset
+  df_sf <- df_sf %>%
+    left_join(st_drop_geometry(df_sf_valid) %>% select(row_id, hotspot_type), 
+              by = "row_id")
+}
+
+# Corrected Visualization 
+map_theme <- tm_layout(
+  legend.position = c("right", "bottom"),
+  legend.title.size = 0.9,
+  legend.text.size = 0.7,
+  frame = FALSE
+)
+
+# Individual maps for each variable
+htp_map <- tm_shape(df_sf) +
+  tm_fill("HTP_imputed", 
+          palette = "Reds",
+          style = "quantile",
+          title = "Hypertension (%)") +
+  tm_borders(col = "gray30", lwd = 0.5) +
+  map_theme
+
+pov_map <- tm_shape(df_sf) +
+  tm_fill("POV",
+          palette = "Blues",
+          style = "quantile",
+          title = "Poverty Rate (%)") +
+  tm_borders(col = "gray30", lwd = 0.5) +
+  map_theme
+
+uer_map <- tm_shape(df_sf) +
+  tm_fill("UER",
+          palette = "YlOrRd",
+          style = "quantile",
+          title = "Unemployment Rate (%)") +
+  tm_borders(col = "gray30", lwd = 0.5) +
+  map_theme
+
+age65_map <- tm_shape(df_sf) +
+  tm_fill("AGE65",
+          palette = "Purples",
+          style = "quantile",
+          title = "Population 65+ (%)") +
+  tm_borders(col = "gray30", lwd = 0.5) +
+  map_theme
+
+# Hotspot map 
+if("hotspot_type" %in% names(df_sf)) {
+  hotspot_map <- tm_shape(df_sf) +
+    tm_fill("hotspot_type",
+            palette = c("High-High" = "red", 
+                       "Low-Low" = "blue", 
+                       "Not Significant" = "lightgray"),
+            title = "Hypertension Hotspots") +
+    tm_borders(col = "gray30", lwd = 0.5) +
+    map_theme
+} else {
+  hotspot_map <- NULL
+}
+
+# Arrange maps
+if(!is.null(hotspot_map)) {
+  tmap_arrange(
+    htp_map, pov_map,
+    uer_map, age65_map,
+    hotspot_map,
+    ncol = 2
+  )
+} else {
+  tmap_arrange(
+    htp_map, pov_map,
+    uer_map, age65_map,
+    ncol = 2
+  )
+}
+
+# Spatial Regression with AGE65 
+model_data <- df_sf %>%
+  filter(complete.cases(HTP, POV, UER, AGE65)) %>%
+  mutate(across(c(HTP, POV, UER, AGE65), scale))
+
+# Handle neighborhood connectivity
+nb_clean <- poly2nb(model_data, queen = TRUE, snap = 1e-3)
+no_neighbors <- which(card(nb_clean) == 0)
+
+if(length(no_neighbors) > 0) {
+  message("Removing ", length(no_neighbors), " tracts with no neighbors")
+  model_data <- model_data[-no_neighbors, ]
+  nb_clean <- poly2nb(model_data, queen = TRUE, snap = 1e-3)
+}
+
+weights_clean <- nb2listw(nb_clean, style = "W", zero.policy = TRUE)
+
+# Fit models
+spatial_lag <- tryCatch(
+  lagsarlm(HTP ~ POV + UER + AGE65,
+           data = model_data,
+           listw = weights_clean,
+           zero.policy = TRUE),
+  error = function(e) {
+    message("Spatial lag model failed: ", e$message)
+    return(NULL)
+  }
+)
+
+spatial_error <- tryCatch(
+  errorsarlm(HTP ~ POV + UER + AGE65,
+             data = model_data,
+             listw = weights_clean,
+             zero.policy = TRUE),
+  error = function(e) {
+    message("Spatial error model failed: ", e$message)
+    return(NULL)
+  }
+)
+
+# Model Results and Diagnostics 
+if(!is.null(spatial_lag)) {
+  model_data$spatial_lag_residuals <- residuals(spatial_lag)
+  
+  residual_map <- tm_shape(model_data) +
+    tm_fill("spatial_lag_residuals",
+            style = "fisher",
+            palette = "-RdBu",
+            title = "Standardized Residuals") +
+    tm_borders(col = "gray30", lwd = 0.5) +
+    map_theme
+  
+  print(residual_map)
+  
+  cat("\n=== Spatial Lag Model Results ===\n")
+  print(summary(spatial_lag))
+}
+
+if(!is.null(spatial_lag) && !is.null(spatial_error)) {
+  modelsummary(
+    list("Spatial Lag" = spatial_lag, 
+         "Spatial Error" = spatial_error),
+    stars = TRUE,
+    title = "Spatial Model Comparison",
+    coef_rename = c("(Intercept)" = "Intercept",
+                   "POV" = "Poverty Rate",
+                   "UER" = "Unemployment Rate",
+                   "AGE65" = "Population 65+")
+  )
+}
+```
+
+
+
+## Appendix
+
+### Important Model Outputs
+```{r}
+# 1. PCA Loadings
+if(exists("pca")) {
+  pca_loadings <- as.data.frame(pca$rotation)
+  cat("### PCA Loadings\n")
+  knitr::kable(pca_loadings, digits = 3) %>% 
+    kableExtra::kable_styling(bootstrap_options = c("striped", "hover"))
+  #write.csv(pca_loadings, "outputs/pca_loadings.csv")
+}
+
+# 2. VIF Scores
+if(exists("model")) {
+  vif_scores <- car::vif(model)
+  vif_df <- data.frame(Variable = names(vif_scores), VIF = vif_scores)
+  cat("\n### Variance Inflation Factors (VIF)\n")
+  print(vif_df)  # Basic R table
+  #write.csv(vif_df, "outputs/vif_scores.csv")
+}
+
+# 3. Moran's I Test
+if(exists("moran_result")) {
+  moran_df <- data.frame(
+    Statistic = moran_result$estimate[1],
+    p.value = moran_result$p.value
+  )
+  cat("\n### Moran's I Test Results\n")
+  knitr::kable(moran_df, digits = 4) %>% 
+    kableExtra::kable_styling(full_width = FALSE)
+  #write.csv(moran_df, "outputs/morans_i_test.csv")
+}
+
+# 4. ARDL Model Coefficients
+if(exists("ardl_model")) {
+  ardl_coefs <- broom::tidy(ardl_model)
+  cat("\n### ARDL Model Coefficients\n")
+  knitr::kable(ardl_coefs, digits = 4) %>% 
+    kableExtra::kable_styling(bootstrap_options = "condensed")
+  #write.csv(ardl_coefs, "outputs/ardl_coefficients.csv")
+}
+
+# 5. Spatial Regression Coefficients
+if(exists("spatial_lag")) {
+  spatial_coefs <- broom::tidy(spatial_lag)
+  cat("\n### Spatial Lag Model Coefficients\n")
+  print(spatial_coefs)  # Basic R table
+  #write.csv(spatial_coefs, "outputs/spatial_lag_coefficients.csv")
+}
+```
+
+### Diagnostics
+```{r}
+# Create directory for plots 
+
+# PCA Scree Plot
+if(exists("pca")) {
+  scree_plot <- fviz_eig(pca, addlabels = TRUE) + 
+    ggtitle("PCA Scree Plot") +
+    theme_minimal()
+  
+  cat("### PCA Scree Plot\n")
+  print(scree_plot)  # Display in document
+  ggsave("outputs/plots/pca_scree_plot.png", scree_plot, 
+         width = 8, height = 6, dpi = 300)
+}
+
+# Linear Model Residual Diagnostics
+if(exists("model")) {
+  cat("\n### Linear Model Residual Plots\n")
+  
+  # Create and display in document
+ 
+  par(mfrow = c(2,2), oma = c(0,0,2,0))
+  plot(model, sub.caption = "Linear Model Diagnostics")
+  dev.off()
+  
+  # Display in document using include_graphics
+  #knitr::include_graphics("outputs/plots/linear_model_residuals.png")
+}
+
+# ARDL Model Residual Plot
+if(exists("ardl_model")) {
+  cat("\n### ARDL Model Residual Plot\n")
+  
+  # Create plot object
+  ardl_resid_plot <- function() {
+    plot(residuals(ardl_model), type="o", 
+         main="Residuals of ARDL Model", 
+         col="blue", ylab="Residuals")
+    abline(h=0, col="red", lty=2)
+    grid()
+  }
+  
+  # Save to file
+  
+  ardl_resid_plot()
+  dev.off()
+  
+  # Display in document
+  ardl_resid_plot()
+}
+
+# Spatial Model Residuals 
+if(exists("spatial_lag")) {
+  cat("\n### Spatial Lag Model Residuals\n")
+  spatial_resid_plot <- plot(residuals(spatial_lag), 
+                           main = "Spatial Lag Model Residuals")
+  print(spatial_resid_plot)
+  
+  # Save spatial residuals
+  
+  plot(residuals(spatial_lag), main = "Spatial Lag Model Residuals")
+  dev.off()
+}
+```
+
+
+
+### Statistical Summary
+```{r}
+# Descriptive Statistics
+if(exists("df")) {
+  desc_stats <- data.frame(
+    Mean = sapply(df[, sapply(df, is.numeric)], mean, na.rm = TRUE),
+    SD = sapply(df[, sapply(df, is.numeric)], sd, na.rm = TRUE),
+    Min = sapply(df[, sapply(df, is.numeric)], min, na.rm = TRUE),
+    Max = sapply(df[, sapply(df, is.numeric)], max, na.rm = TRUE),
+    N = sapply(df[, sapply(df, is.numeric)], function(x) sum(!is.na(x)))
+  )
+  
+  cat("### Descriptive Statistics\n")
+  knitr::kable(desc_stats, digits = 3, caption = "Summary Statistics of Numeric Variables") %>%
+    kableExtra::kable_styling(
+      bootstrap_options = c("striped", "hover", "condensed"),
+      full_width = FALSE
+    )
+  
+  #write.csv(desc_stats, "outputs/descriptive_stats.csv")
+}
+
+# Correlation Matrix
+if(exists("numeric_df")) {
+  cor_matrix <- cor(numeric_df, use = "complete.obs")
+  
+  cat("\n### Correlation Matrix\n")
+  knitr::kable(cor_matrix, digits = 2, caption = "Pairwise Correlations") %>%
+    kableExtra::kable_styling(
+      bootstrap_options = c("striped", "hover"),
+      font_size = 10
+    ) %>%
+    kableExtra::column_spec(1, bold = TRUE)
+  
+  #write.csv(cor_matrix, "outputs/correlation_matrix.csv")
+}
+
+# ADF Test Results
+if(exists("adf_results")) {
+  cat("\n### Augmented Dickey-Fuller Test Results\n")
+  knitr::kable(adf_results, digits = 4, 
+               caption = "Stationarity Test Results") %>%
+    kableExtra::kable_styling(
+      bootstrap_options = c("striped", "hover"),
+      full_width = FALSE
+    ) %>%
+    kableExtra::row_spec(which(adf_results$P_Value < 0.05), 
+                         bold = TRUE, color = "white", background = "#D7261E")
+  
+  #write.csv(adf_results, "outputs/adf_test_results.csv")
+}
+```
+
+### Spatial Analysis Output
+```{r}
+# Hotspot Classification
+if("hotspot_type" %in% names(df_sf)) {
+  hotspot_data <- st_drop_geometry(df_sf) %>% 
+    select(GEOID, hotspot_type) %>%
+    mutate(hotspot_type = factor(hotspot_type,
+                                levels = c("High-High", "Low-Low", "Not Significant")))
+  
+  # Create summary counts
+  hotspot_summary <- hotspot_data %>%
+    count(hotspot_type) %>%
+    mutate(Percentage = n/nrow(hotspot_data)*100)
+  
+  cat("### Hotspot Classification Summary\n")
+  knitr::kable(hotspot_summary, 
+               col.names = c("Hotspot Type", "Count", "Percentage (%)"),
+               digits = 1,
+               caption = "Distribution of Hypertension Hotspots") %>%
+    kableExtra::kable_styling(bootstrap_options = c("striped", "hover")) %>%
+    kableExtra::row_spec(1, background = "#FFDDDD") %>%  # Highlight High-High
+    kableExtra::row_spec(2, background = "#DDDDFF")      # Highlight Low-Low
+  
+  # Show first 10 rows of full data
+  cat("\n#### Sample Hotspot Classifications (First 10 Tracts)\n")
+  knitr::kable(head(hotspot_data, 10), 
+               caption = "Sample of Hotspot Classifications") %>%
+    kableExtra::kable_styling(bootstrap_options = "condensed")
+  
+  #write.csv(hotspot_data, "outputs/hotspot_classification.csv")
+}
+
+# Spatial Residuals
+if(exists("spatial_lag")) {
+  spatial_residuals <- st_drop_geometry(model_data) %>%
+    select(GEOID, spatial_lag_residuals) %>%
+    mutate(Residual_Group = cut(spatial_lag_residuals,
+                               breaks = c(-Inf, -2, -1, 1, 2, Inf),
+                               labels = c("Very Low", "Low", "Normal", "High", "Very High")))
+  
+  # Create residual summary
+  residual_summary <- spatial_residuals %>%
+    group_by(Residual_Group) %>%
+    summarise(Count = n(),
+              Avg_Residual = mean(spatial_lag_residuals))
+  
+  cat("\n### Spatial Lag Model Residuals Summary\n")
+  knitr::kable(residual_summary, 
+               digits = 3,
+               caption = "Distribution of Standardized Residuals") %>%
+    kableExtra::kable_styling(bootstrap_options = "striped") %>%
+    kableExtra::column_spec(3, color = ifelse(residual_summary$Avg_Residual > 0, "red", "blue"))
+  
+  # Show extreme residuals (top/bottom 5)
+  extreme_residuals <- spatial_residuals %>%
+    arrange(desc(abs(spatial_lag_residuals))) %>%
+    head(10) %>%
+    mutate(RowID = row_number())  # Add numeric row identifiers
+  
+  cat("\n#### Tracts with Most Extreme Residuals\n")
+  knitr::kable(extreme_residuals %>% select(-RowID), digits = 3) %>%
+    kableExtra::kable_styling() %>%
+    kableExtra::row_spec(
+      which(extreme_residuals$spatial_lag_residuals > 0), 
+      background = "#FFEEEE"
+    ) %>%
+    kableExtra::row_spec(
+      which(extreme_residuals$spatial_lag_residuals < 0), 
+      background = "#EEEEFF"
+    )
+  
+  #write.csv(spatial_residuals, "outputs/spatial_residuals.csv")
+}
+```
+
+### Visulaization and Maps
+```{r}
+# Interactive Trend Plot
+if(exists("interactive_plot")) {
+  cat("### Interactive Trend Visualization\n")
+  cat("*Use the interactive controls to explore temporal patterns*\n\n")
+  
+  # Display in document
+  print(interactive_plot)
+  
+  # Save standalone version
+  if(!dir.exists("outputs")) dir.create("outputs")
+  htmlwidgets::saveWidget(
+    widget = interactive_plot, 
+    file = "outputs/interactive_trends.html",
+    selfcontained = TRUE,
+    title = "DC Health Indicators 2013-2023"
+  )
+}
+
+# verify map objects exist and are tmap objects
+required_maps <- c("htp_map", "pov_map", "uer_map", "age65_map", "hotspot_map")
+valid_maps <- keep(required_maps, ~exists(.x) && inherits(get(.x), "tmap"))
+
+# Static Map Visualizations
+map_theme <- tm_layout(
+  legend.position = c("right", "bottom"),
+  legend.title.size = 0.9,
+  legend.text.size = 0.7,
+  frame = FALSE
+)
+
+if(length(valid_maps) > 0) {
+  # Apply consistent theme to all maps
+  walk(valid_maps, ~assign(.x, get(.x) + map_theme, envir = .GlobalEnv))
+  
+  # Display individual maps
+  walk(valid_maps, ~{
+    cat("\n###", str_to_title(gsub("_map", "", gsub("_", " ", .x))), "Map\n")
+    print(get(.x))
+  })
+  
+  # combined panel only if at least 2 maps
+  if(length(valid_maps) >= 2) {
+    cat("\n### Combined Map Panel\n")
+    
+    # Prepare map list arrangement
+    map_objects <- mget(valid_maps)
+    
+    # Special handling odd number of maps
+    if(length(valid_maps) %% 2 != 0) {
+      map_objects$empty <- tm_shape(df_sf) + tm_text("") # Empty placeholder
+    }
+    
+    # Create arrangement
+    ncols <- ifelse(length(valid_maps) >=4, 2, 1)
+    combined_maps <- do.call(tmap_arrange, c(map_objects, list(ncol = ncols)))
+    
+    print(combined_maps)
+    
+  }
+} else {
+  message("No valid tmap objects found for visualization")
+}
+  
+```
+
+### Model Comparison
+```{r}
+# Prepare Model Comparison Table
+if(exists("spatial_lag") && exists("spatial_error") && exists("ardl_model") && exists("model")) {
+  
+  # Create comparison dataframe with enhanced formatting
+  model_comp <- modelsummary(
+    list("Linear" = model,
+         "ARDL" = ardl_model,
+         "Spatial Lag" = spatial_lag, 
+         "Spatial Error" = spatial_error),
+    output = "data.frame",
+    stars = TRUE,
+    title = "Model Comparison Across Specifications",
+    coef_rename = c(
+      "(Intercept)" = "Intercept",
+      "POV" = "Poverty Rate",
+      "UER" = "Unemployment Rate",
+      "AGE65" = "Population 65+",
+      "lag.HTP" = "Spatial Lag (ρ)",
+      "rho" = "Spatial Error (λ)"
+    ),
+    gof_map = c("nobs", "r.squared", "adj.r.squared", "sigma", "logLik", "AIC", "BIC")
+  )
+  
+  #Display formatted table with conditional coloring
+  cat("### Comparative Model Performance\n")
+  model_table <- knitr::kable(model_comp, caption = "Comparison of Model Coefficients and Fit Statistics") %>%
+    kableExtra::kable_styling(
+      bootstrap_options = c("striped", "hover", "condensed"),
+      font_size = 11,
+      full_width = FALSE,
+      position = "center"
+    ) %>%
+    kableExtra::column_spec(1, bold = TRUE, width = "3cm") %>%
+    kableExtra::column_spec(2:5, width = "2.5cm") %>%
+    kableExtra::footnote(
+      general = "Standard errors in parentheses; * p<0.1, ** p<0.05, *** p<0.01",
+      footnote_as_chunk = TRUE
+    )
+  
+  # Highlight best performing model for each fit statistic
+  if("AIC" %in% model_comp$term) {
+    aic_values <- as.numeric(model_comp[model_comp$term == "AIC", 2:5])
+    best_aic <- which.min(aic_values) + 1  # +1 to account for term column
+    model_table <- model_table %>% 
+      kableExtra::row_spec(which(model_comp$term == "AIC"), 
+                          background = ifelse(1:4 == best_aic, "#E6F3E6", NA))
+  }
+  
+  if("BIC" %in% model_comp$term) {
+    bic_values <- as.numeric(model_comp[model_comp$term == "BIC", 2:5])
+    best_bic <- which.min(bic_values) + 1
+    model_table <- model_table %>% 
+      kableExtra::row_spec(which(model_comp$term == "BIC"), 
+                          background = ifelse(1:4 == best_bic, "#E6F3E6", NA))
+  }
+  
+  print(model_table)
+  
+  # Export to CSV with additional metadata
+  #write.csv(model_comp, "outputs/model_comparison.csv", row.names = FALSE)
+  
+  # Create simplified coefficient comparison
+  coef_comparison <- model_comp %>%
+    filter(!term %in% c("AIC", "BIC", "R2", "Log.Lik", "sigma", "nobs", "adj.r.squared")) %>%
+    select(-part)
+  
+  cat("\n### Key Coefficient Comparison\n")
+  knitr::kable(coef_comparison, digits = 3) %>%
+    kableExtra::kable_styling() %>%
+    kableExtra::column_spec(1, bold = TRUE) %>%
+    print()
+  
+} else {
+  cat("\nNote: Not all models available for comparison\n")
+}
+```
+
+### Statistically Significant Variables(<0.05)
+```{r}
+library(modelsummary)
+library(broom)
+library(dplyr)
+
+# Create model list with original models
+model_list <- list(
+  "Linear" = model,
+  "ARDL" = ardl_model,
+  "Spatial Lag" = spatial_lag, 
+  "Spatial Error" = spatial_error
+)
+
+# Define methods for each model type
+tidy_custom.spatialreg <- function(model, ...) {
+  broom::tidy(model) %>% 
+    filter(p.value < 0.05) %>% 
+    mutate(term = case_when(
+      term == "rho" ~ "Spatial Lag (ρ)",
+      term == "lambda" ~ "Spatial Error (λ)",
+      TRUE ~ term
+    ))
+}
+
+tidy_custom.default <- function(model, ...) {
+  broom::tidy(model) %>% 
+    filter(p.value < 0.05) %>% 
+    mutate(term = case_when(
+      term == "L(HTP, 1)" ~ "Lagged HTP",
+      term == "L(UER, 1)" ~ "Lagged Unemployment",
+      TRUE ~ term
+    ))
+}
+
+# Single modelsummary call with all parameters
+modelsummary(
+  model_list,
+  stars = c('+' = 0.1, '*' = 0.05, '**' = 0.01, '***' = 0.001),
+  coef_map = c(
+    "POV" = "Poverty Rate",
+    "UER" = "Unemployment Rate", 
+    "AGE65" = "Age 65+",
+    "LIN" = "No Health Insurance",
+    "Lagged HTP" = "Lagged Hypertension",
+    "Lagged Unemployment" = "Lagged Unemployment",
+    "Spatial Lag (ρ)" = "Spatial Lag (ρ)", 
+    "Spatial Error (λ)" = "Spatial Error (λ)"
+  ),
+  gof_map = c("nobs", "r.squared", "aic", "bic"),
+  title = "Model Comparison: Statistically Significant Coefficients (p < 0.05)",
+  notes = list(
+    "Standard errors in parentheses",
+    "Only coefficients with p < 0.05 shown",
+    "+ p<0.1, * p<0.05, ** p<0.01, *** p<0.001"
+  )
+)
+```
+
+
